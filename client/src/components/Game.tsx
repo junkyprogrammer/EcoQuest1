@@ -1,5 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef, useEffect } from "react";
+import * as THREE from "three";
 import Player from "./Player";
 import Environment from "./Environment";
 import Lights from "./Lights";

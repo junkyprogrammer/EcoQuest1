@@ -96,3 +96,149 @@ export const environmentalFacts = [
   "Solar panels can last 25-30 years and keep generating clean energy!",
   "Composting can reduce household waste by up to 30%."
 ];
+
+export interface LevelObjective {
+  type: 'collect' | 'recycle' | 'quiz' | 'score';
+  target: string | number;
+  current?: number;
+  description: string;
+}
+
+export interface Level {
+  id: number;
+  name: string;
+  description: string;
+  objectives: LevelObjective[];
+  unlockScore: number;
+  maxTime?: number; // optional time limit in seconds
+  rewardPoints: number;
+  theme: string;
+}
+
+export const levels: Level[] = [
+  {
+    id: 1,
+    name: "Green Beginner",
+    description: "Learn the basics of environmental conservation!",
+    objectives: [
+      {
+        type: 'collect',
+        target: 'Plants',
+        current: 0,
+        description: 'Collect 5 plant items'
+      },
+      {
+        type: 'score',
+        target: 500,
+        current: 0,
+        description: 'Reach 500 points'
+      }
+    ],
+    unlockScore: 0,
+    rewardPoints: 100,
+    theme: 'beginner'
+  },
+  {
+    id: 2,
+    name: "Recycling Hero",
+    description: "Master the art of recycling and waste sorting!",
+    objectives: [
+      {
+        type: 'recycle',
+        target: 'Recyclables',
+        current: 0,
+        description: 'Complete 3 recycling challenges'
+      },
+      {
+        type: 'collect',
+        target: 'Clean Energy',
+        current: 0,
+        description: 'Collect 3 energy orbs'
+      },
+      {
+        type: 'score',
+        target: 1000,
+        current: 0,
+        description: 'Reach 1000 points'
+      }
+    ],
+    unlockScore: 500,
+    rewardPoints: 200,
+    theme: 'recycling'
+  },
+  {
+    id: 3,
+    name: "Climate Champion",
+    description: "Tackle climate change and renewable energy challenges!",
+    objectives: [
+      {
+        type: 'quiz',
+        target: 'climate',
+        current: 0,
+        description: 'Complete 2 climate quizzes'
+      },
+      {
+        type: 'collect',
+        target: 'Clean Energy',
+        current: 0,
+        description: 'Collect 5 energy orbs'
+      },
+      {
+        type: 'score',
+        target: 1800,
+        current: 0,
+        description: 'Reach 1800 points'
+      }
+    ],
+    unlockScore: 1000,
+    maxTime: 300, // 5 minutes
+    rewardPoints: 300,
+    theme: 'climate'
+  },
+  {
+    id: 4,
+    name: "Eco Master",
+    description: "Prove yourself as the ultimate environmental guardian!",
+    objectives: [
+      {
+        type: 'collect',
+        target: 'Plants',
+        current: 0,
+        description: 'Collect 10 plant items'
+      },
+      {
+        type: 'recycle',
+        target: 'Recyclables',
+        current: 0,
+        description: 'Complete 5 recycling challenges'
+      },
+      {
+        type: 'quiz',
+        target: 'all',
+        current: 0,
+        description: 'Complete 3 environmental quizzes'
+      },
+      {
+        type: 'score',
+        target: 3000,
+        current: 0,
+        description: 'Reach 3000 points'
+      }
+    ],
+    unlockScore: 1800,
+    maxTime: 420, // 7 minutes
+    rewardPoints: 500,
+    theme: 'master'
+  }
+];
+
+export const getLevelByScore = (score: number): Level => {
+  // Find the highest level that can be unlocked with the current score
+  const availableLevels = levels.filter(level => score >= level.unlockScore);
+  return availableLevels[availableLevels.length - 1] || levels[0];
+};
+
+export const getNextLevel = (currentLevelId: number): Level | null => {
+  const nextLevel = levels.find(level => level.id === currentLevelId + 1);
+  return nextLevel || null;
+};

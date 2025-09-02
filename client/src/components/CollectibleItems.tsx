@@ -5,7 +5,7 @@ import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
 export default function CollectibleItems() {
-  const { addToInventory, addScore } = useGameState();
+  const { addToInventory, addScore, updateObjectiveProgress } = useGameState();
   const { playSuccess } = useAudio();
   
   const playerRef = useRef<THREE.Vector3>(new THREE.Vector3());
@@ -65,8 +65,10 @@ export default function CollectibleItems() {
         
         if (item.type === 'plant') {
           addToInventory("Plants", 1);
+          updateObjectiveProgress('collect', 'Plants', 1);
         } else if (item.type === 'energy') {
           addToInventory("Clean Energy", 1);
+          updateObjectiveProgress('collect', 'Clean Energy', 1);
         }
         
         playSuccess();

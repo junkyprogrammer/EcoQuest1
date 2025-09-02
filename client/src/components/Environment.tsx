@@ -4,7 +4,7 @@ import * as THREE from "three";
 export default function Environment() {
   // Pre-calculate positions to avoid Math.random in render
   const treePositions = useMemo(() => {
-    const positions = [];
+    const positions: [number, number, number][] = [];
     for (let i = 0; i < 20; i++) {
       positions.push([
         (Math.random() - 0.5) * 80,
@@ -17,10 +17,10 @@ export default function Environment() {
 
   const buildingPositions = useMemo(() => {
     return [
-      [-20, 0, -20],
-      [20, 0, -20],
-      [-20, 0, 20],
-      [15, 0, 25]
+      [-20, 0, -20] as [number, number, number],
+      [20, 0, -20] as [number, number, number],
+      [-20, 0, 20] as [number, number, number],
+      [15, 0, 25] as [number, number, number]
     ];
   }, []);
 
