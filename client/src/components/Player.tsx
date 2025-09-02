@@ -1,13 +1,14 @@
 import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useKeyboardControls } from "@react-three/drei";
+import { useKeyboardControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { Controls } from "../App";
 import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
 export default function Player() {
-  const playerRef = useRef<THREE.Mesh>(null);
+  const { scene } = useGLTF('/models/player_character.glb');
+  const playerRef = useRef<THREE.Group>(null);
   const [subscribe, get] = useKeyboardControls<Controls>();
   const { addScore } = useGameState();
   const { playHit } = useAudio();
@@ -83,9 +84,13 @@ export default function Player() {
   });
 
   return (
-    <mesh ref={playerRef} position={[0, 1, 0]} castShadow>
-      <boxGeometry args={[1, 2, 1]} />
-      <meshLambertMaterial color="#4CAF50" />
-    </mesh>
+    <group ref={playerRef} position={[0, 1, 0]}>
+      <primitive 
+        object={scene.clone()} 
+        scale={[2.5, 2.5, 2.5]}
+        castShadow 
+        receiveShadow
+      />
+    </group>
   );
 }
