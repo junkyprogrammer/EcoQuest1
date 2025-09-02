@@ -1,10 +1,34 @@
 import { useRef, useMemo, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useKeyboardControls } from "@react-three/drei";
+import { useKeyboardControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { Controls } from "../App";
 import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
+
+// Component for the realistic tree
+function RealisticTree({ position }: { position: [number, number, number] }) {
+  const { scene } = useGLTF('/models/realistic_tree.glb');
+  const meshRef = useRef<THREE.Group>(null);
+
+  // Gentle swaying animation
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
+    }
+  });
+
+  return (
+    <group ref={meshRef} position={position}>
+      <primitive 
+        object={scene.clone()} 
+        scale={[2.5, 2.5, 2.5]}
+        castShadow 
+        receiveShadow
+      />
+    </group>
+  );
+}
 
 export default function EnvironmentalObjects() {
   const { openMiniGame, openQuiz, addToInventory, addScore, updateObjectiveProgress } = useGameState();
@@ -135,6 +159,13 @@ export default function EnvironmentalObjects() {
         </group>
       ))}
 
+      {/* Realistic Trees */}
+      <RealisticTree position={[-5, 0, -8]} />
+      <RealisticTree position={[8, 0, -12]} />
+      <RealisticTree position={[-12, 0, 8]} />
+      <RealisticTree position={[15, 0, 10]} />
+      <RealisticTree position={[-18, 0, -5]} />
+
       {/* Wind Turbines */}
       <WindTurbine position={[30, 0, 30]} />
       <WindTurbine position={[35, 0, 25]} />
@@ -142,6 +173,7 @@ export default function EnvironmentalObjects() {
     </group>
   );
 }
+
 
 function WindTurbine({ position }: { position: [number, number, number] }) {
   const turbineRef = useRef<THREE.Group>(null);
