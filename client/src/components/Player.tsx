@@ -499,46 +499,6 @@ export default function Player() {
         receiveShadow
       />
       
-      {/* ========== FIXED: REALISTIC HIP JOINT SYSTEM ========== */}
-      {/* CRITICAL FIX: Left hip joint with leg as child for proper pivot motion */}
-      <group 
-        ref={leftHipRef}
-        position={[hipJointConfig.leftHipPosition.x, hipJointConfig.leftHipPosition.y, hipJointConfig.leftHipPosition.z]}
-      >
-        <mesh 
-          ref={leftLegRef}
-          position={[hipJointConfig.legMeshOffset.x, hipJointConfig.legMeshOffset.y, hipJointConfig.legMeshOffset.z]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[legThickness, legLength, legThickness]} />
-          <meshStandardMaterial 
-            color="#8B4513" 
-            roughness={0.7}
-            metalness={0.1}
-          />
-        </mesh>
-      </group>
-      
-      {/* CRITICAL FIX: Right hip joint with leg as child for proper pivot motion */}
-      <group 
-        ref={rightHipRef}
-        position={[hipJointConfig.rightHipPosition.x, hipJointConfig.rightHipPosition.y, hipJointConfig.rightHipPosition.z]}
-      >
-        <mesh 
-          ref={rightLegRef}
-          position={[hipJointConfig.legMeshOffset.x, hipJointConfig.legMeshOffset.y, hipJointConfig.legMeshOffset.z]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[legThickness, legLength, legThickness]} />
-          <meshStandardMaterial 
-            color="#8B4513" 
-            roughness={0.7}
-            metalness={0.1}
-          />
-        </mesh>
-      </group>
     </group>
   );
 }
