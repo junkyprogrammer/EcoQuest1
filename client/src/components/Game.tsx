@@ -32,23 +32,19 @@ export default function Game() {
   return (
     <group ref={groupRef}>
       <Lights />
-      {/* Playground Garden Environment */}
+      {/* Basic Environment */}
       <Terrain />
-      <PlaygroundEnvironment />
-      <NPCs />
       <Player />
       
-      {/* Keep ecosystem manager for other features but not active by default */}
-      {false && (
-        <>
-          <EcosystemManager 
-            currentEcosystem={currentEcosystem}
-            transitionDuration={2.0}
-          />
-          <EnvironmentalObjects />
-          <CollectibleItems />
-        </>
-      )}
+      {/* Collectible Items - All inventory items can be collected */}
+      <CollectibleItems />
+      
+      {/* Ecosystem manager for additional features */}
+      <EcosystemManager 
+        currentEcosystem={currentEcosystem}
+        transitionDuration={2.0}
+      />
+      <EnvironmentalObjects />
     </group>
   );
 }
