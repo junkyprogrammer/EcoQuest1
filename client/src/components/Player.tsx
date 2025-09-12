@@ -1,15 +1,19 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useKeyboardControls, useGLTF, useAnimations } from "@react-three/drei";
+import { SkeletonUtils } from "three-stdlib";
 import * as THREE from "three";
 import { Controls } from "../App";
 import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
 export default function Player() {
-  const { scene, animations } = useGLTF('/models/student_character.glb');
+  // Use the new rigged student character with proper animations
+  const gltf = useGLTF('/models/rigged_student.glb');
+  const model = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf.scene]);
   const playerRef = useRef<THREE.Group>(null);
-  const { actions, mixer } = useAnimations(animations, playerRef);
+  const modelRef = useRef<THREE.Object3D>(null);
+  const { actions, mixer, clips } = useAnimations(gltf.animations, modelRef);
   const [subscribe, get] = useKeyboardControls<Controls>();
   const { addScore } = useGameState();
   const { playHit } = useAudio();
@@ -55,39 +59,74 @@ export default function Player() {
 
   // Initialize animations and setup skeletal animation system
   useEffect(() => {
-    if (animations.length > 0) {
-      console.log('Available animations:', animations.map(anim => anim.name));
+    console.log('Model loading complete. Checking for skeletal structure...');
+    
+    // Check if model has skeleton
+    let hasSkinnedMesh = false;
+    let boneCount = 0;
+    model.traverse((child) => {
+      if (child.isSkinnedMesh) {
+        hasSkinnedMesh = true;
+        if (child.skeleton) {
+          boneCount = child.skeleton.bones.length;
+        }
+      }
+    });
+    
+    console.log(`Skeletal analysis: SkinnedMesh=${hasSkinnedMesh}, Bones=${boneCount}`);
+    
+    if (gltf.animations.length > 0) {
+      console.log('Available animations:', gltf.animations.map(anim => anim.name));
+      
+      // Find appropriate animations
+      const idleClip = clips.find(clip => /idle|stand/i.test(clip.name));
+      const walkClip = clips.find(clip => /walk/i.test(clip.name));
+      const runClip = clips.find(clip => /run|sprint/i.test(clip.name));
+      
+      console.log('Animation mapping:', { 
+        idle: idleClip?.name, 
+        walk: walkClip?.name, 
+        run: runClip?.name 
+      });
+      
       // Start with idle animation
-      if (actions.idle) {
-        actions.idle.play();
-        currentActionRef.current = 'idle';
-        console.log('Started idle animation');
+      const idleAction = actions[idleClip?.name] || actions.idle || Object.values(actions)[0];
+      if (idleAction) {
+        idleAction.play();
+        currentActionRef.current = idleClip?.name || 'idle';
+        console.log('Started skeletal animation:', currentActionRef.current);
       }
     } else {
-      console.log('No animations found in character model - using procedural animations');
+      console.log('No animations found - using procedural fallback');
     }
-  }, [animations, actions]);
+  }, [gltf.animations, actions, clips, model]);
 
   // Handle animation state changes with cross-fading
   useEffect(() => {
-    if (!mixer || animations.length === 0) return;
+    if (!mixer || gltf.animations.length === 0) return;
 
-    const nextAction = animationState === 'idle' ? 'idle' : 
-                      animationState === 'walking' ? 'walk' : 
-                      animationState === 'running' ? 'run' : 'idle';
+    // Map animation states to actual clip names
+    const idleClip = clips.find(clip => /idle|stand/i.test(clip.name));
+    const walkClip = clips.find(clip => /walk/i.test(clip.name));
+    const runClip = clips.find(clip => /run|sprint/i.test(clip.name));
+    
+    const nextActionName = animationState === 'idle' ? idleClip?.name : 
+                          animationState === 'walking' ? walkClip?.name : 
+                          animationState === 'running' ? runClip?.name : 
+                          idleClip?.name;
 
-    if (nextAction !== currentActionRef.current) {
+    if (nextActionName && nextActionName !== currentActionRef.current) {
       const current = actions[currentActionRef.current];
-      const next = actions[nextAction];
+      const next = actions[nextActionName];
       
       if (current && next) {
-        console.log(`Animation transition: ${currentActionRef.current} -> ${nextAction}`);
+        console.log(`Skeletal animation transition: ${currentActionRef.current} -> ${nextActionName}`);
         current.fadeOut(0.25);
         next.reset().fadeIn(0.25).play();
-        currentActionRef.current = nextAction;
+        currentActionRef.current = nextActionName;
       }
     }
-  }, [animationState, actions, mixer, animations]);
+  }, [animationState, actions, mixer, gltf.animations, clips]);
 
   useFrame((state, delta) => {
     if (!playerRef.current) return;
@@ -181,7 +220,7 @@ export default function Player() {
     }
 
     // Realistic walking animation system like Free Fire/BGMI
-    if (animations.length === 0 && (animationState === 'walking' || animationState === 'running') && isMoving) {
+    if (gltf.animations.length === 0 && (animationState === 'walking' || animationState === 'running') && isMoving) {
       // Fallback procedural animations when no clips are available
       const walkSpeed = animationState === 'running' ? 12 : 8;
       walkPhase.current += delta * walkSpeed;
@@ -240,7 +279,7 @@ export default function Player() {
         
         console.log(`Procedural animation: ${animationState}, walkPhase: ${walkPhase.current.toFixed(2)}, Sprint: ${controls.sprint}`);
       }
-    } else if (animations.length === 0) {
+    } else if (gltf.animations.length === 0) {
       // Smoothly return to idle pose for procedural animations
       if (playerRef.current?.children[0]) {
         const character = playerRef.current.children[0];
@@ -290,7 +329,8 @@ export default function Player() {
   return (
     <group ref={playerRef} position={[0, 1, 0]}>
       <primitive 
-        object={scene.clone()} 
+        ref={modelRef}
+        object={model} 
         scale={[2.5, 2.5, 2.5]}
         castShadow 
         receiveShadow
