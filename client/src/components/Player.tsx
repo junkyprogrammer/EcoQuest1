@@ -649,10 +649,10 @@ export default function Player() {
       }
     }
 
-    // Fixed boundary system to keep character in camera view
-    const boundarySize = 20; // Reduced from 45 to keep in camera view
-    const minZ = -10; // Don't let character go too far behind camera
-    const maxZ = 25;  // Reasonable forward limit
+    // CRITICAL FIX: Tighter boundaries to keep character in camera's field of view
+    const boundarySize = 8; // Much smaller to stay visible (camera at [0,8,12])
+    const minZ = -5; // Don't go behind camera's focus point
+    const maxZ = 15;  // Stay within camera's viewing distance
     
     // X boundary (left/right)
     if (Math.abs(player.position.x) > boundarySize) {
@@ -672,13 +672,19 @@ export default function Player() {
       console.log(`Z boundary hit (too far forward): reset to ${player.position.z}`);
     }
     
-    // Emergency reset if character somehow gets completely lost
+    // VISIBILITY FIX: Emergency reset if character goes outside visible range
     const distanceFromOrigin = Math.sqrt(player.position.x * player.position.x + player.position.z * player.position.z);
-    if (distanceFromOrigin > 50) {
-      console.warn(`🚨 EMERGENCY RESET: Character too far from origin (${distanceFromOrigin.toFixed(1)})`);
+    const isOutsideVisibleRange = distanceFromOrigin > 20 || 
+                                  Math.abs(player.position.x) > 12 || 
+                                  player.position.z < -8 || 
+                                  player.position.z > 18;
+    
+    if (isOutsideVisibleRange) {
+      console.warn(`🚨 VISIBILITY RESET: Character outside camera view at (${player.position.x.toFixed(1)}, ${player.position.z.toFixed(1)}) distance: ${distanceFromOrigin.toFixed(1)}`);
       player.position.set(0, player.position.y, 0);
       momentum.current.set(0, 0, 0);
       velocity.current.set(0, 0, 0);
+      console.log('✅ Character reset to visible position: (0, 1, 0)');
     }
 
     // Update cooldowns
@@ -719,6 +725,15 @@ export default function Player() {
     state.camera.position.z = player.position.z + cameraOffset.current.z;
     state.camera.lookAt(cameraTarget);
   });
+
+  // VISIBILITY FIX: Force character to visible position and add debug logging
+  useEffect(() => {
+    if (playerRef.current) {
+      // Ensure character starts at visible position
+      playerRef.current.position.set(0, 1, 0);
+      console.log('🎯 Nathan character initialized at visible position:', playerRef.current.position);
+    }
+  }, []);
 
   return (
     <group ref={playerRef} position={[0, 1, 0]}>
