@@ -1,8 +1,11 @@
 import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
+import { useKeyboardControls } from "@react-three/drei";
+import { Controls } from "../App";
 import MiniGames from "./MiniGames";
 import Quiz from "./Quiz";
 import EcosystemSelection from "./EcosystemSelection";
+import PauseMenu from "./PauseMenu";
 import { useState, useEffect } from "react";
 
 export default function GameUI() {
@@ -15,14 +18,18 @@ export default function GameUI() {
     inventory, 
     showMiniGame, 
     showQuiz,
+    showPauseMenu,
+    isPaused,
     currentEcosystem,
     availableEcosystems,
     ecosystemProgress,
     start,
     restart,
-    showEcosystemSelection
+    showEcosystemSelection,
+    togglePauseMenu
   } = useGameState();
   const { isMuted, toggleMute } = useAudio();
+  const [subscribe, get] = useKeyboardControls<Controls>();
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
 
@@ -33,6 +40,20 @@ export default function GameUI() {
       setTutorialStep(0);
     }
   }, [gamePhase, currentLevel, score]);
+
+  // Handle pause key controls
+  useEffect(() => {
+    const unsubscribe = subscribe(
+      (state) => state.pause,
+      (pressed) => {
+        if (pressed && gamePhase === 'playing' && !showMiniGame && !showQuiz && !showTutorial) {
+          console.log('Pause key pressed - toggling pause menu');
+          togglePauseMenu();
+        }
+      }
+    );
+    return unsubscribe;
+  }, [subscribe, gamePhase, showMiniGame, showQuiz, showTutorial, togglePauseMenu]);
 
   const uiStyle = {
     position: 'absolute' as const,
@@ -330,6 +351,9 @@ export default function GameUI() {
       {/* Mini-games and quiz overlays */}
       {showMiniGame && <MiniGames />}
       {showQuiz && <Quiz />}
+      
+      {/* Pause Menu */}
+      {showPauseMenu && <PauseMenu />}
 
       {/* Tutorial Overlay */}
       {showTutorial && (

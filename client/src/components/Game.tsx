@@ -11,9 +11,12 @@ import { useGameState } from "../lib/stores/useGameState";
 
 export default function Game() {
   const groupRef = useRef<THREE.Group>(null);
-  const { gamePhase, currentLevel, currentEcosystem, ecosystemTransitioning } = useGameState();
+  const { gamePhase, currentLevel, currentEcosystem, ecosystemTransitioning, isPaused } = useGameState();
 
   useFrame((state, delta) => {
+    // Pause game loop when pause menu is open
+    if (isPaused) return;
+    
     // Game loop logic here
     if (gamePhase === 'playing') {
       // Update game state each frame

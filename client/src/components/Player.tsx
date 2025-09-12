@@ -15,7 +15,7 @@ export default function Player() {
   const modelRef = useRef<THREE.Object3D>(null);
   const { actions, mixer, clips } = useAnimations(gltf.animations, modelRef);
   const [subscribe, get] = useKeyboardControls<Controls>();
-  const { addScore } = useGameState();
+  const { addScore, isPaused } = useGameState();
   const { playHit } = useAudio();
   
   // Enhanced movement physics and state
@@ -214,6 +214,9 @@ export default function Player() {
 
   useFrame((state, delta) => {
     if (!playerRef.current) return;
+
+    // Pause game loop when pause menu is open
+    if (isPaused) return;
 
     const controls = get();
     const player = playerRef.current;

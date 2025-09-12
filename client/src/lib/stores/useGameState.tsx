@@ -4,6 +4,19 @@ import { levels, getLevelByScore, getAvailableEcosystems, getEcosystemProgress, 
 
 export type GamePhase = "menu" | "ecosystem_selection" | "playing" | "ended";
 
+interface SavedGameState {
+  score: number;
+  currentLevel: number;
+  currentEcosystem: 'forest' | 'ocean' | 'city';
+  inventory: Inventory;
+  completedChallenges: string[];
+  recyclingChallengesCompleted: number;
+  quizzesCompleted: number;
+  ecosystemProgress: EcosystemProgress;
+  availableEcosystems: string[];
+  saveDate: string;
+}
+
 interface Inventory {
   [key: string]: number;
 }
@@ -17,8 +30,12 @@ interface GameState {
   inventory: Inventory;
   showMiniGame: boolean;
   showQuiz: boolean;
+  showPauseMenu: boolean;
+  isPaused: boolean;
   completedChallenges: string[];
   levelStartTime: number;
+  pauseStartTime?: number;
+  totalPausedTime: number;
   timeRemaining?: number;
   recyclingChallengesCompleted: number;
   quizzesCompleted: number;
@@ -39,6 +56,17 @@ interface GameState {
   closeMiniGame: () => void;
   openQuiz: () => void;
   closeQuiz: () => void;
+  
+  // Pause/Resume Actions
+  pauseGame: () => void;
+  resumeGame: () => void;
+  togglePauseMenu: () => void;
+  
+  // Save/Load Actions
+  saveGame: () => void;
+  loadGame: () => boolean;
+  hasSavedGame: () => boolean;
+  
   completeChallenge: (challengeId: string) => void;
   nextLevel: () => void;
   updateObjectiveProgress: (type: string, target: string | number, amount?: number) => void;
@@ -76,8 +104,12 @@ export const useGameState = create<GameState>()(
     },
     showMiniGame: false,
     showQuiz: false,
+    showPauseMenu: false,
+    isPaused: false,
     completedChallenges: [],
     levelStartTime: Date.now(),
+    pauseStartTime: undefined,
+    totalPausedTime: 0,
     recyclingChallengesCompleted: 0,
     quizzesCompleted: 0,
     
@@ -126,8 +158,12 @@ export const useGameState = create<GameState>()(
         },
         showMiniGame: false,
         showQuiz: false,
+        showPauseMenu: false,
+        isPaused: false,
         completedChallenges: [],
         levelStartTime: Date.now(),
+        pauseStartTime: undefined,
+        totalPausedTime: 0,
         recyclingChallengesCompleted: 0,
         quizzesCompleted: 0,
         currentEcosystem: 'forest',
@@ -177,6 +213,133 @@ export const useGameState = create<GameState>()(
 
     closeQuiz: () => {
       set(() => ({ showQuiz: false }));
+    },
+
+    // Pause/Resume functionality
+    pauseGame: () => {
+      set((state) => {
+        if (!state.isPaused && state.gamePhase === 'playing') {
+          return {
+            isPaused: true,
+            pauseStartTime: Date.now()
+          };
+        }
+        return {};
+      });
+    },
+
+    resumeGame: () => {
+      set((state) => {
+        if (state.isPaused && state.pauseStartTime) {
+          const pauseDuration = Date.now() - state.pauseStartTime;
+          return {
+            isPaused: false,
+            pauseStartTime: undefined,
+            totalPausedTime: state.totalPausedTime + pauseDuration,
+            showPauseMenu: false
+          };
+        }
+        return {};
+      });
+    },
+
+    togglePauseMenu: () => {
+      set((state) => {
+        if (state.gamePhase === 'playing') {
+          const newShowPauseMenu = !state.showPauseMenu;
+          
+          if (newShowPauseMenu && !state.isPaused) {
+            // Opening pause menu - pause the game
+            return {
+              showPauseMenu: true,
+              isPaused: true,
+              pauseStartTime: Date.now()
+            };
+          } else if (!newShowPauseMenu && state.isPaused) {
+            // Closing pause menu - resume the game
+            const pauseDuration = state.pauseStartTime ? Date.now() - state.pauseStartTime : 0;
+            return {
+              showPauseMenu: false,
+              isPaused: false,
+              pauseStartTime: undefined,
+              totalPausedTime: state.totalPausedTime + pauseDuration
+            };
+          }
+          
+          return { showPauseMenu: newShowPauseMenu };
+        }
+        return {};
+      });
+    },
+
+    // Save/Load functionality
+    saveGame: () => {
+      const state = get();
+      const saveData: SavedGameState = {
+        score: state.score,
+        currentLevel: state.currentLevel,
+        currentEcosystem: state.currentEcosystem,
+        inventory: state.inventory,
+        completedChallenges: state.completedChallenges,
+        recyclingChallengesCompleted: state.recyclingChallengesCompleted,
+        quizzesCompleted: state.quizzesCompleted,
+        ecosystemProgress: state.ecosystemProgress,
+        availableEcosystems: state.availableEcosystems,
+        saveDate: new Date().toISOString()
+      };
+      
+      try {
+        localStorage.setItem('ecolearn_save', JSON.stringify(saveData));
+        console.log('Game saved successfully');
+        return true;
+      } catch (error) {
+        console.error('Failed to save game:', error);
+        return false;
+      }
+    },
+
+    loadGame: () => {
+      try {
+        const saveData = localStorage.getItem('ecolearn_save');
+        if (saveData) {
+          const parsed: SavedGameState = JSON.parse(saveData);
+          const levelData = levels.find(l => l.id === parsed.currentLevel) || levels[0];
+          
+          set({
+            score: parsed.score,
+            currentLevel: parsed.currentLevel,
+            currentLevelData: levelData,
+            objectives: [...levelData.objectives],
+            currentEcosystem: parsed.currentEcosystem,
+            inventory: parsed.inventory,
+            completedChallenges: parsed.completedChallenges,
+            recyclingChallengesCompleted: parsed.recyclingChallengesCompleted,
+            quizzesCompleted: parsed.quizzesCompleted,
+            ecosystemProgress: parsed.ecosystemProgress,
+            availableEcosystems: parsed.availableEcosystems,
+            gamePhase: 'ecosystem_selection',
+            levelStartTime: Date.now(),
+            totalPausedTime: 0,
+            isPaused: false,
+            showPauseMenu: false
+          });
+          
+          console.log('Game loaded successfully');
+          return true;
+        }
+      } catch (error) {
+        console.error('Failed to load game:', error);
+      }
+      return false;
+    },
+
+    hasSavedGame: () => {
+      try {
+        const saveData = localStorage.getItem('ecolearn_save');
+        return saveData !== null;
+      } catch {
+        return false;
+      }
     },
 
     completeChallenge: (challengeId: string) => {

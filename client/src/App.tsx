@@ -23,7 +23,8 @@ export enum Controls {
   walk = 'walk',
   strafe_left = 'strafe_left',
   strafe_right = 'strafe_right',
-  precision_mode = 'precision_mode'
+  precision_mode = 'precision_mode',
+  pause = 'pause'
 }
 
 const controls = [
@@ -39,6 +40,7 @@ const controls = [
   { name: Controls.strafe_left, keys: ["KeyQ"] },
   { name: Controls.strafe_right, keys: ["KeyR"] },
   { name: Controls.precision_mode, keys: ["AltLeft", "AltRight"] },
+  { name: Controls.pause, keys: ["Escape", "KeyP"] },
 ];
 
 const queryClient = new QueryClient();
