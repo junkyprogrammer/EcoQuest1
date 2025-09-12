@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 import { miniGames } from "../lib/gameData";
-import RecyclingSortingGame from "./RecyclingSortingGame";
 
 export default function MiniGames() {
   const { closeMiniGame, addScore, currentLevel } = useGameState();
@@ -70,7 +69,7 @@ export default function MiniGames() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            {game.options?.map((option: string, index: number) => (
+            {game.options.map((option: string, index: number) => (
               <button
                 key={index}
                 style={buttonStyle}
@@ -104,7 +103,7 @@ export default function MiniGames() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            {game.options?.map((option: string, index: number) => (
+            {game.options.map((option: string, index: number) => (
               <button
                 key={index}
                 style={buttonStyle}
@@ -123,15 +122,6 @@ export default function MiniGames() {
           </button>
         </div>
       </div>
-    );
-  }
-
-  if (game.type === 'drag_drop_recycling') {
-    return (
-      <RecyclingSortingGame 
-        onClose={closeMiniGame}
-        onScore={addScore}
-      />
     );
   }
 

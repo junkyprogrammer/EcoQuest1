@@ -1,21 +1,8 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { levels, getLevelByScore, getAvailableEcosystems, getEcosystemProgress, type Level, type LevelObjective, type EcosystemProgress } from "../gameData";
+import { levels, getLevelByScore, type Level, type LevelObjective } from "../gameData";
 
-export type GamePhase = "menu" | "ecosystem_selection" | "playing" | "ended";
-
-interface SavedGameState {
-  score: number;
-  currentLevel: number;
-  currentEcosystem: 'forest' | 'ocean' | 'city';
-  inventory: Inventory;
-  completedChallenges: string[];
-  recyclingChallengesCompleted: number;
-  quizzesCompleted: number;
-  ecosystemProgress: EcosystemProgress;
-  availableEcosystems: string[];
-  saveDate: string;
-}
+export type GamePhase = "menu" | "playing" | "ended";
 
 interface Inventory {
   [key: string]: number;
@@ -30,21 +17,11 @@ interface GameState {
   inventory: Inventory;
   showMiniGame: boolean;
   showQuiz: boolean;
-  showPauseMenu: boolean;
-  isPaused: boolean;
   completedChallenges: string[];
   levelStartTime: number;
-  pauseStartTime?: number;
-  totalPausedTime: number;
   timeRemaining?: number;
   recyclingChallengesCompleted: number;
   quizzesCompleted: number;
-  
-  // Ecosystem-specific state
-  currentEcosystem: 'forest' | 'ocean' | 'city';
-  ecosystemProgress: EcosystemProgress;
-  availableEcosystems: string[];
-  ecosystemTransitioning: boolean;
   
   // Actions
   start: () => void;
@@ -56,27 +33,10 @@ interface GameState {
   closeMiniGame: () => void;
   openQuiz: () => void;
   closeQuiz: () => void;
-  
-  // Pause/Resume Actions
-  pauseGame: () => void;
-  resumeGame: () => void;
-  togglePauseMenu: () => void;
-  
-  // Save/Load Actions
-  saveGame: () => void;
-  loadGame: () => boolean;
-  hasSavedGame: () => boolean;
-  
   completeChallenge: (challengeId: string) => void;
   nextLevel: () => void;
   updateObjectiveProgress: (type: string, target: string | number, amount?: number) => void;
   checkLevelCompletion: () => void;
-  
-  // Ecosystem-specific actions
-  selectEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => void;
-  showEcosystemSelection: () => void;
-  completeEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => void;
-  unlockNextEcosystem: () => void;
 }
 
 export const useGameState = create<GameState>()(
@@ -89,43 +49,21 @@ export const useGameState = create<GameState>()(
     inventory: {
       "Recyclables": 0,
       "Clean Energy": 0,
-      "Plants": 0,
-      "Seeds": 0,
-      "Flowers": 0,
-      "Mushrooms": 0,
-      "Pearls": 0,
-      "Shells": 0,
-      "Seaweed": 0,
-      "Ocean Cleanup Points": 0,
-      "Renewable Energy Installed": 0,
-      "Pollution Reduced": 0,
-      "Green Spaces Created": 0,
-      "Cleaned Pollution": 0
+      "Plants": 0
     },
     showMiniGame: false,
     showQuiz: false,
-    showPauseMenu: false,
-    isPaused: false,
     completedChallenges: [],
     levelStartTime: Date.now(),
-    pauseStartTime: undefined,
-    totalPausedTime: 0,
     recyclingChallengesCompleted: 0,
     quizzesCompleted: 0,
-    
-    // Ecosystem state initialization
-    currentEcosystem: 'forest',
-    ecosystemProgress: getEcosystemProgress(0),
-    availableEcosystems: ['forest'],
-    ecosystemTransitioning: false,
     
     start: () => {
       set((state) => {
         if (state.gamePhase === "menu") {
           return { 
-            gamePhase: "ecosystem_selection",
-            levelStartTime: Date.now(),
-            availableEcosystems: getAvailableEcosystems(state.score)
+            gamePhase: "playing",
+            levelStartTime: Date.now()
           };
         }
         return {};
@@ -143,33 +81,14 @@ export const useGameState = create<GameState>()(
         inventory: {
           "Recyclables": 0,
           "Clean Energy": 0,
-          "Plants": 0,
-          "Seeds": 0,
-          "Flowers": 0,
-          "Mushrooms": 0,
-          "Pearls": 0,
-          "Shells": 0,
-          "Seaweed": 0,
-          "Ocean Cleanup Points": 0,
-          "Renewable Energy Installed": 0,
-          "Pollution Reduced": 0,
-          "Green Spaces Created": 0,
-          "Cleaned Pollution": 0
+          "Plants": 0
         },
         showMiniGame: false,
         showQuiz: false,
-        showPauseMenu: false,
-        isPaused: false,
         completedChallenges: [],
         levelStartTime: Date.now(),
-        pauseStartTime: undefined,
-        totalPausedTime: 0,
         recyclingChallengesCompleted: 0,
-        quizzesCompleted: 0,
-        currentEcosystem: 'forest',
-        ecosystemProgress: getEcosystemProgress(0),
-        availableEcosystems: ['forest'],
-        ecosystemTransitioning: false
+        quizzesCompleted: 0
       }));
     },
     
@@ -183,11 +102,7 @@ export const useGameState = create<GameState>()(
     },
 
     addScore: (points: number) => {
-      set((state) => ({
-        score: state.score + points,
-        ecosystemProgress: getEcosystemProgress(state.score + points),
-        availableEcosystems: getAvailableEcosystems(state.score + points)
-      }));
+      set((state) => ({ score: state.score + points }));
     },
 
     addToInventory: (item: string, quantity = 1) => {
@@ -213,133 +128,6 @@ export const useGameState = create<GameState>()(
 
     closeQuiz: () => {
       set(() => ({ showQuiz: false }));
-    },
-
-    // Pause/Resume functionality
-    pauseGame: () => {
-      set((state) => {
-        if (!state.isPaused && state.gamePhase === 'playing') {
-          return {
-            isPaused: true,
-            pauseStartTime: Date.now()
-          };
-        }
-        return {};
-      });
-    },
-
-    resumeGame: () => {
-      set((state) => {
-        if (state.isPaused && state.pauseStartTime) {
-          const pauseDuration = Date.now() - state.pauseStartTime;
-          return {
-            isPaused: false,
-            pauseStartTime: undefined,
-            totalPausedTime: state.totalPausedTime + pauseDuration,
-            showPauseMenu: false
-          };
-        }
-        return {};
-      });
-    },
-
-    togglePauseMenu: () => {
-      set((state) => {
-        if (state.gamePhase === 'playing') {
-          const newShowPauseMenu = !state.showPauseMenu;
-          
-          if (newShowPauseMenu && !state.isPaused) {
-            // Opening pause menu - pause the game
-            return {
-              showPauseMenu: true,
-              isPaused: true,
-              pauseStartTime: Date.now()
-            };
-          } else if (!newShowPauseMenu && state.isPaused) {
-            // Closing pause menu - resume the game
-            const pauseDuration = state.pauseStartTime ? Date.now() - state.pauseStartTime : 0;
-            return {
-              showPauseMenu: false,
-              isPaused: false,
-              pauseStartTime: undefined,
-              totalPausedTime: state.totalPausedTime + pauseDuration
-            };
-          }
-          
-          return { showPauseMenu: newShowPauseMenu };
-        }
-        return {};
-      });
-    },
-
-    // Save/Load functionality
-    saveGame: () => {
-      const state = get();
-      const saveData: SavedGameState = {
-        score: state.score,
-        currentLevel: state.currentLevel,
-        currentEcosystem: state.currentEcosystem,
-        inventory: state.inventory,
-        completedChallenges: state.completedChallenges,
-        recyclingChallengesCompleted: state.recyclingChallengesCompleted,
-        quizzesCompleted: state.quizzesCompleted,
-        ecosystemProgress: state.ecosystemProgress,
-        availableEcosystems: state.availableEcosystems,
-        saveDate: new Date().toISOString()
-      };
-      
-      try {
-        localStorage.setItem('ecolearn_save', JSON.stringify(saveData));
-        console.log('Game saved successfully');
-        return true;
-      } catch (error) {
-        console.error('Failed to save game:', error);
-        return false;
-      }
-    },
-
-    loadGame: () => {
-      try {
-        const saveData = localStorage.getItem('ecolearn_save');
-        if (saveData) {
-          const parsed: SavedGameState = JSON.parse(saveData);
-          const levelData = levels.find(l => l.id === parsed.currentLevel) || levels[0];
-          
-          set({
-            score: parsed.score,
-            currentLevel: parsed.currentLevel,
-            currentLevelData: levelData,
-            objectives: [...levelData.objectives],
-            currentEcosystem: parsed.currentEcosystem,
-            inventory: parsed.inventory,
-            completedChallenges: parsed.completedChallenges,
-            recyclingChallengesCompleted: parsed.recyclingChallengesCompleted,
-            quizzesCompleted: parsed.quizzesCompleted,
-            ecosystemProgress: parsed.ecosystemProgress,
-            availableEcosystems: parsed.availableEcosystems,
-            gamePhase: 'ecosystem_selection',
-            levelStartTime: Date.now(),
-            totalPausedTime: 0,
-            isPaused: false,
-            showPauseMenu: false
-          });
-          
-          console.log('Game loaded successfully');
-          return true;
-        }
-      } catch (error) {
-        console.error('Failed to load game:', error);
-      }
-      return false;
-    },
-
-    hasSavedGame: () => {
-      try {
-        const saveData = localStorage.getItem('ecolearn_save');
-        return saveData !== null;
-      } catch {
-        return false;
-      }
     },
 
     completeChallenge: (challengeId: string) => {
@@ -407,65 +195,6 @@ export const useGameState = create<GameState>()(
             get().end();
           }, 2000);
         }
-      }
-    },
-    
-    // Ecosystem-specific actions
-    selectEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => {
-      set((state) => {
-        const ecosystemLevel = levels.find(level => level.ecosystem === ecosystem);
-        if (ecosystemLevel && state.availableEcosystems.includes(ecosystem)) {
-          return {
-            currentEcosystem: ecosystem,
-            currentLevelData: ecosystemLevel,
-            objectives: [...ecosystemLevel.objectives],
-            gamePhase: "playing" as GamePhase,
-            levelStartTime: Date.now(),
-            ecosystemTransitioning: true
-          };
-        }
-        return {};
-      });
-      
-      // Reset transition after delay
-      setTimeout(() => {
-        set({ ecosystemTransitioning: false });
-      }, 2000);
-    },
-    
-    showEcosystemSelection: () => {
-      set((state) => ({
-        gamePhase: "ecosystem_selection" as GamePhase,
-        availableEcosystems: getAvailableEcosystems(state.score)
-      }));
-    },
-    
-    completeEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => {
-      set((state) => {
-        const updatedProgress = { ...state.ecosystemProgress };
-        updatedProgress[ecosystem].completed = true;
-        
-        return {
-          ecosystemProgress: updatedProgress,
-          availableEcosystems: getAvailableEcosystems(state.score)
-        };
-      });
-      
-      get().unlockNextEcosystem();
-    },
-    
-    unlockNextEcosystem: () => {
-      const state = get();
-      const newAvailable = getAvailableEcosystems(state.score);
-      
-      set({ availableEcosystems: newAvailable });
-      
-      // Check if all ecosystems are completed
-      const allCompleted = Object.values(state.ecosystemProgress).every(eco => eco.completed);
-      if (allCompleted) {
-        setTimeout(() => {
-          get().end();
-        }, 3000);
       }
     }
   }))
