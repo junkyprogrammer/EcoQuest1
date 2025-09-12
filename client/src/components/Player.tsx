@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useKeyboardControls, useGLTF, useAnimations } from "@react-three/drei";
+import { useKeyboardControls, useGLTF, useFBX, useAnimations } from "@react-three/drei";
 import { SkeletonUtils } from "three-stdlib";
 import * as THREE from "three";
 import { Controls } from "../App";
@@ -8,12 +8,12 @@ import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
 export default function Player() {
-  // Use the new rigged student character with proper animations
-  const gltf = useGLTF('/models/rigged_student.glb');
-  const model = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf.scene]);
+  // Use the new Nathan character with FBX animations
+  const fbx = useFBX('/models/nathan_character.fbx');
+  const model = useMemo(() => SkeletonUtils.clone(fbx), [fbx]);
   const playerRef = useRef<THREE.Group>(null);
   const modelRef = useRef<THREE.Object3D>(null);
-  const { actions, mixer, clips } = useAnimations(gltf.animations, modelRef);
+  const { actions, mixer, clips } = useAnimations(fbx.animations, modelRef);
   const [subscribe, get] = useKeyboardControls<Controls>();
   const { addScore, isPaused } = useGameState();
   const { playHit } = useAudio();
@@ -98,8 +98,8 @@ export default function Player() {
     
     console.log(`Skeletal analysis: SkinnedMesh=${hasSkinnedMesh}, Bones=${boneCount}`);
     
-    if (gltf.animations.length > 0) {
-      console.log('Available animations:', gltf.animations.map(anim => anim.name));
+    if (fbx.animations.length > 0) {
+      console.log('Available animations:', fbx.animations.map(anim => anim.name));
       
       // Find appropriate animations
       const idleClip = clips.find(clip => /idle|stand/i.test(clip.name));
@@ -122,11 +122,11 @@ export default function Player() {
     } else {
       console.log('No animations found - using procedural fallback');
     }
-  }, [gltf.animations, actions, clips, model]);
+  }, [fbx.animations, actions, clips, model]);
 
   // Handle animation state changes with cross-fading
   useEffect(() => {
-    if (!mixer || gltf.animations.length === 0) return;
+    if (!mixer || fbx.animations.length === 0) return;
 
     // Map animation states to actual clip names
     const idleClip = clips.find(clip => /idle|stand/i.test(clip.name));
@@ -149,7 +149,7 @@ export default function Player() {
         currentActionRef.current = nextActionName;
       }
     }
-  }, [animationState, actions, mixer, gltf.animations, clips]);
+  }, [animationState, actions, mixer, fbx.animations, clips]);
 
   // Fixed dash mechanics - only on key events, not every frame
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
@@ -416,7 +416,7 @@ export default function Player() {
     }
 
     // Enhanced procedural animation system for all movement states
-    if (gltf.animations.length === 0) {
+    if (fbx.animations.length === 0) {
       const character = playerRef.current?.children[0];
       if (!character) return;
       
