@@ -9,17 +9,24 @@ import { useAudio } from "../lib/stores/useAudio";
 export default function Player() {
   // Load character model
   const { scene: characterModel } = useGLTF('/models/player_character.glb');
+  
+  // One-time initialization logging (MUST be before other hooks)
+  const [initialized, setInitialized] = useState(false);
+  
   const model = useMemo(() => {
     const clonedModel = characterModel.clone();
     clonedModel.position.set(0, 0, 0);
     clonedModel.rotation.y = 0;
     clonedModel.scale.setScalar(1);
     
-    console.log('✅ Character loaded: player_character.glb');
-    console.log('📍 Model positioned at origin for optimal visibility');
+    if (!initialized) {
+      console.log('✅ Character loaded: player_character.glb');
+      console.log('📍 Model positioned at origin for optimal visibility');
+      setInitialized(true);
+    }
     
     return clonedModel;
-  }, [characterModel]);
+  }, [characterModel, initialized]);
   
   const playerRef = useRef<THREE.Group>(null);
   // FIXED: Hip joint system for realistic leg pivoting
@@ -45,11 +52,11 @@ export default function Player() {
   const leftLegPhaseRef = useRef(0);
   const rightLegPhaseRef = useRef(0);
   
-  // FIXED: Performance - throttled logging
+  // FIXED: Performance - throttled logging (much more aggressive throttling)
   const logFrameCounter = useRef(0);
   const shouldLog = () => {
     logFrameCounter.current++;
-    return logFrameCounter.current % 60 === 0; // Log every 60 frames (~1x/second at 60fps)
+    return logFrameCounter.current % 300 === 0; // Log every 300 frames (~1x/5seconds at 60fps)
   };
   
   // Enhanced movement constants
@@ -195,7 +202,7 @@ export default function Player() {
       
       // ENHANCED DIRECTIONAL ROTATION - Calculate target rotation based on movement direction
       targetRotation.current = Math.atan2(inputVector.x, inputVector.z);
-      if (shouldLog()) console.log(`🧭 Movement direction: ${(targetRotation.current * 180 / Math.PI).toFixed(1)}°`);
+      // Movement direction logging removed for performance
     }
     
     // FIXED: Calculate movement speed with fallback for undefined sprint
@@ -248,7 +255,7 @@ export default function Player() {
       currentRotation.current += adjustedDifference * rotationSpeed * delta;
       player.rotation.y = currentRotation.current;
       
-      if (shouldLog()) console.log(`🔄 Character rotation: ${(currentRotation.current * 180 / Math.PI).toFixed(1)}° (facing movement direction)`);
+      // Character rotation logging removed for performance
     }
     
     // 🚀 ENHANCED DRAMATIC JUMPING VISUAL EFFECTS - NO Y position changes, purely visual
@@ -310,7 +317,7 @@ export default function Player() {
         model.rotation.x = runSway;
         model.rotation.z = runBob * 0.1 + runTilt;
         
-        console.log(`💨 MINECRAFT RUNNING: Bob: ${runBob.toFixed(2)}, Sway: ${runSway.toFixed(2)}, Tilt: ${runTilt.toFixed(2)}`);
+        // Running animation logging removed for performance
       } else {
         // Minecraft-style walking effects
         const walkBob = Math.sin(walkingTime.current) * walkingBobIntensity;
@@ -325,7 +332,7 @@ export default function Player() {
         model.rotation.x = walkSway;
         model.rotation.z = walkBob * 0.08 + walkTilt;
         
-        console.log(`🚶 MINECRAFT WALKING: Bob: ${walkBob.toFixed(2)}, Sway: ${walkSway.toFixed(2)}, Tilt: ${walkTilt.toFixed(2)}`);
+        // Walking animation logging removed for performance
       }
     } else if (!isJumping) {
       // Reset to normal scale when idle (not moving or jumping)
@@ -441,8 +448,6 @@ export default function Player() {
     if (hitBoundary) {
       console.log(`🏔️ Character contained within MASSIVE terrain: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)}) - World area: ${terrainBoundary*2}x${terrainBoundary*2} units (16,000x16,000 total)`);
       playHit(); // Audio feedback when hitting boundary
-    } else if (playerIsMoving && shouldLog()) {
-      console.log(`🌍 Moving within massive world: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)}) - Boundaries: ±${terrainBoundary}`);
     }
     
     // Camera follows player smoothly
@@ -475,17 +480,21 @@ export default function Player() {
     console.log('✨ Realistic human-like leg movement ready!');
   }, []);
 
-  // Enhanced animation state logging
+  // Enhanced animation state logging (throttled)
+  const animationLogCounter = useRef(0);
   useEffect(() => {
-    console.log(`🎭 Animation state: ${animationState} ${isJumping ? '(JUMPING)' : ''} ${isMoving ? '(MOVING)' : '(IDLE)'}`);
-    if (animationState === 'jumping') {
-      console.log('🚀 Enhanced dramatic jump effects activated!');
-    }
-    if (animationState === 'walking') {
-      console.log('🚶 Minecraft-style walking effects activated!');
-    }
-    if (animationState === 'running') {
-      console.log('💨 Minecraft-style running effects activated!');
+    animationLogCounter.current++;
+    if (animationLogCounter.current % 10 === 0) {
+      console.log(`🎭 Animation state: ${animationState} ${isJumping ? '(JUMPING)' : ''} ${isMoving ? '(MOVING)' : '(IDLE)'}`);
+      if (animationState === 'jumping') {
+        console.log('🚀 Enhanced dramatic jump effects activated!');
+      }
+      if (animationState === 'walking') {
+        console.log('🚶 Minecraft-style walking effects activated!');
+      }
+      if (animationState === 'running') {
+        console.log('💨 Minecraft-style running effects activated!');
+      }
     }
   }, [animationState, isJumping, isMoving]);
 
