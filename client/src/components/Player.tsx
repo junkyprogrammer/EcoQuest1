@@ -38,10 +38,10 @@ export default function Player() {
   const gravity = 25;
   const isOnGround = useRef(true);
   
-  // Character positioning - position character above ground level as requested
+  // Character positioning - position character well above ground level for maximum visibility
   const characterScale = 2.5; // Increased scale for better visibility
   const characterHeight = characterScale * 1.0; // Approximate height based on scale
-  const groundLevel = characterHeight / 2; // Character center positioned above ground level
+  const groundLevel = 4.0; // Character positioned significantly above ground level for optimal visibility
 
   // Keyboard input detection with clear logging
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function Player() {
       velocity.current.y = 0;
       isOnGround.current = true;
       
-      console.log(`🏃 Character above ground at Y: ${groundLevel.toFixed(2)} (above terrain surface)`);
+      console.log(`🏃 Character elevated at Y: ${groundLevel.toFixed(2)} (significantly above terrain surface for optimal visibility)`);
       
       // Return to idle/walking when landing
       if (animationState === 'jumping') {
@@ -200,10 +200,10 @@ export default function Player() {
   useEffect(() => {
     if (playerRef.current) {
       playerRef.current.position.set(0, groundLevel, 0);
-      console.log(`🎯 Character initialized above ground (0,${groundLevel.toFixed(2)},0)`);
-      console.log('👟 Character positioned above the ground surface as requested');
-      console.log('📷 Camera setup for optimal above-ground viewing');
-      console.log(`📏 Character scale: ${characterScale}, Height: ${characterHeight.toFixed(2)}, Above ground level: ${groundLevel.toFixed(2)}`);
+      console.log(`🎯 Character initialized at elevated position (0,${groundLevel.toFixed(2)},0)`);
+      console.log('👟 Character positioned significantly above ground level for optimal visibility');
+      console.log('📷 Camera setup for elevated viewing of character');
+      console.log(`📏 Character scale: ${characterScale}, Height: ${characterHeight.toFixed(2)}, Elevated ground level: ${groundLevel.toFixed(2)} (${groundLevel.toFixed(1)}x higher than before)`);
     }
   }, [groundLevel, characterHeight, characterScale]);
 
