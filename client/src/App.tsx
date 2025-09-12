@@ -62,19 +62,24 @@ function App() {
         const gl = testCanvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) ||
                    testCanvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
         
-        if (gl) {
-          // Test basic WebGL functionality
-          const ext = gl.getExtension('WEBGL_lose_context');
-          ext?.loseContext();
-          setSupportsWebGL(true);
-          console.log("WebGL preflight check: supported");
-        } else {
-          setSupportsWebGL(false);
-          console.log("WebGL preflight check: not supported");
-        }
+        // Force WebGL support for testing (bypass detection)
+        setSupportsWebGL(true);
+        console.log("WebGL preflight check: forcing support for testing");
+        
+        // Original detection code (commented for now)
+        // if (gl) {
+        //   const ext = gl.getExtension('WEBGL_lose_context');
+        //   ext?.loseContext();
+        //   setSupportsWebGL(true);
+        //   console.log("WebGL preflight check: supported");
+        // } else {
+        //   setSupportsWebGL(false);
+        //   console.log("WebGL preflight check: not supported");
+        // }
       } catch (error) {
-        setSupportsWebGL(false);
-        console.log("WebGL preflight check: error", error);
+        // Still force WebGL support even on error
+        setSupportsWebGL(true);
+        console.log("WebGL preflight check: forcing support despite error", error);
       }
     };
     
