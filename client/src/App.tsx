@@ -40,6 +40,31 @@ function App() {
 
   useEffect(() => {
     setShowCanvas(true);
+    
+    // Preflight WebGL detection
+    const testWebGL = () => {
+      try {
+        const testCanvas = document.createElement('canvas');
+        const gl = testCanvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) ||
+                   testCanvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
+        
+        if (gl) {
+          // Test basic WebGL functionality
+          const ext = gl.getExtension('WEBGL_lose_context');
+          ext?.loseContext();
+          setSupportsWebGL(true);
+          console.log("WebGL preflight check: supported");
+        } else {
+          setSupportsWebGL(false);
+          console.log("WebGL preflight check: not supported");
+        }
+      } catch (error) {
+        setSupportsWebGL(false);
+        console.log("WebGL preflight check: error", error);
+      }
+    };
+    
+    testWebGL();
   }, []);
 
   return (
@@ -66,47 +91,36 @@ function App() {
                     near: 0.1,
                     far: 1000
                   }}
-                  gl={(canvas) => {
-                    // Custom WebGL renderer factory with robust fallback detection
-                    const attrs = {
-                      alpha: false,
-                      antialias: false,
-                      powerPreference: 'low-power' as const,
-                      depth: true,
-                      stencil: false,
-                      preserveDrawingBuffer: false,
-                      desynchronized: true,
-                      failIfMajorPerformanceCaveat: false
-                    };
-                    
-                    try {
-                      // Try WebGL2 first, then WebGL1
-                      let context = canvas.getContext('webgl2', attrs) || canvas.getContext('webgl', attrs);
-                      
-                      if (!context) {
-                        console.warn('WebGL context creation failed - falling back to 2D mode');
-                        setSupportsWebGL(false);
-                        throw new Error('WebGL not supported');
-                      }
-                      
-                      console.log('WebGL context created successfully');
-                      setSupportsWebGL(true);
-                      
-                      const renderer = new THREE.WebGLRenderer({ 
-                        canvas, 
-                        context: context as WebGLRenderingContext
-                      });
-                      
-                      return renderer;
-                    } catch (error) {
-                      console.warn('WebGL renderer creation failed:', error);
-                      setSupportsWebGL(false);
-                      throw error;
-                    }
+                  gl={{ 
+                    antialias: false, 
+                    powerPreference: 'low-power',
+                    alpha: false,
+                    failIfMajorPerformanceCaveat: false 
                   }}
                   onCreated={(state) => {
                     console.log('WebGL renderer created successfully - 3D mode active');
                     state.gl.setPixelRatio(1);
+                    
+                    // Add context cleanup on unmount
+                    const cleanup = () => {
+                      try {
+                        const ext = state.gl.getContext().getExtension('WEBGL_lose_context');
+                        if (ext) ext.loseContext();
+                        state.gl.dispose();
+                      } catch (e) {
+                        console.warn("WebGL cleanup warning:", e);
+                      }
+                    };
+                    
+                    // Handle WebGL context lost
+                    state.gl.domElement.addEventListener('webglcontextlost', (event) => {
+                      event.preventDefault();
+                      console.log("WebGL context lost - switching to 2D fallback");
+                      setSupportsWebGL(false);
+                    });
+                    
+                    // Store cleanup for later use
+                    (state.gl as any).__cleanup = cleanup;
                     
                     // Add context lost handler with fallback to 2D
                     const canvas = state.gl.domElement;

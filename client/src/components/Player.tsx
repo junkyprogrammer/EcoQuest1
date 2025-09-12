@@ -7,7 +7,7 @@ import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
 export default function Player() {
-  const { scene } = useGLTF('/models/player_character.glb');
+  const { scene } = useGLTF('/models/student_character.glb');
   const playerRef = useRef<THREE.Group>(null);
   const [subscribe, get] = useKeyboardControls<Controls>();
   const { addScore } = useGameState();
