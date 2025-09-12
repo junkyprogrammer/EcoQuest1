@@ -175,8 +175,38 @@ export default function Player() {
       }
     }
     
-    // Movement boundaries removed - character can now access all areas without limitations
-    console.log(`🌍 Free movement enabled - position: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)})`);
+    // Terrain-based movement boundaries - keep character within the 100x100 ground area
+    const terrainBoundary = 48; // Slightly smaller than the 50-unit terrain radius for safety buffer
+    let hitBoundary = false;
+    
+    // X-axis boundary check (left/right movement)
+    if (player.position.x > terrainBoundary) {
+      player.position.x = terrainBoundary;
+      hitBoundary = true;
+      console.log('🚧 TERRAIN BOUNDARY HIT: Right edge - staying within ground area');
+    } else if (player.position.x < -terrainBoundary) {
+      player.position.x = -terrainBoundary;
+      hitBoundary = true;
+      console.log('🚧 TERRAIN BOUNDARY HIT: Left edge - staying within ground area');
+    }
+    
+    // Z-axis boundary check (forward/backward movement)
+    if (player.position.z > terrainBoundary) {
+      player.position.z = terrainBoundary;
+      hitBoundary = true;
+      console.log('🚧 TERRAIN BOUNDARY HIT: Front edge - staying within ground area');
+    } else if (player.position.z < -terrainBoundary) {
+      player.position.z = -terrainBoundary;
+      hitBoundary = true;
+      console.log('🚧 TERRAIN BOUNDARY HIT: Back edge - staying within ground area');
+    }
+    
+    if (hitBoundary) {
+      console.log(`🏔️ Character contained within terrain: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)}) - Ground area: ${terrainBoundary*2}x${terrainBoundary*2} units`);
+      playHit(); // Audio feedback when hitting boundary
+    } else if (playerIsMoving) {
+      console.log(`🌍 Moving within terrain bounds: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)})`);
+    }
     
     // Camera follows player smoothly
     const camera = state.camera;
