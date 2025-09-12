@@ -10,7 +10,26 @@ import { useAudio } from "../lib/stores/useAudio";
 export default function Player() {
   // Use the new Nathan character with FBX animations
   const fbx = useFBX('/models/nathan_character.fbx');
-  const model = useMemo(() => SkeletonUtils.clone(fbx), [fbx]);
+  const model = useMemo(() => {
+    const clonedModel = SkeletonUtils.clone(fbx);
+    
+    // CRITICAL FIX: Center and ground the mesh using bounding box
+    const bbox = new THREE.Box3().setFromObject(clonedModel);
+    const center = new THREE.Vector3();
+    bbox.getCenter(center);
+    const min = bbox.min.clone();
+    
+    // Center horizontally (X,Z) and ground vertically (Y)
+    clonedModel.position.sub(new THREE.Vector3(center.x, min.y, center.z));
+    
+    console.log('=== MESH CENTERING APPLIED ===');
+    console.log('Original bbox center:', center.toArray());
+    console.log('Original bbox min:', min.toArray());
+    console.log('Model offset applied:', -center.x, -min.y, -center.z);
+    console.log('New model position:', clonedModel.position.toArray());
+    
+    return clonedModel;
+  }, [fbx]);
   const playerRef = useRef<THREE.Group>(null);
   const modelRef = useRef<THREE.Object3D>(null);
   const { actions, mixer, clips } = useAnimations(fbx.animations, modelRef);
@@ -479,11 +498,16 @@ export default function Player() {
     velocity.current.y -= 20 * delta;
     player.position.y += velocity.current.y * delta;
 
-    // Ground collision (simple)
-    if (player.position.y <= 1) {
-      player.position.y = 1;
+    // FIXED: Ground collision to match terrain level (y=0)
+    const groundY = 0; // Match terrain level exactly
+    if (player.position.y <= groundY) {
+      player.position.y = groundY;
       velocity.current.y = 0;
       isOnGround.current = true;
+      // Visibility check after ground collision
+      const worldPos = new THREE.Vector3();
+      player.getWorldPosition(worldPos);
+      console.log(`Ground collision: Player at world (${worldPos.x.toFixed(1)}, ${worldPos.y.toFixed(1)}, ${worldPos.z.toFixed(1)})`);
     }
 
     // Update animation mixer for skeletal animations
@@ -684,7 +708,11 @@ export default function Player() {
       player.position.set(0, player.position.y, 0);
       momentum.current.set(0, 0, 0);
       velocity.current.set(0, 0, 0);
-      console.log('✅ Character reset to visible position: (0, 1, 0)');
+      console.log('✅ Character reset to visible position: (0, 0, 0)');   
+      // Add visibility verification after reset
+      const worldPos = new THREE.Vector3();
+      player.getWorldPosition(worldPos);
+      console.log(`Post-reset world position: (${worldPos.x.toFixed(1)}, ${worldPos.y.toFixed(1)}, ${worldPos.z.toFixed(1)})`);
     }
 
     // Update cooldowns
@@ -736,7 +764,7 @@ export default function Player() {
   }, []);
 
   return (
-    <group ref={playerRef} position={[0, 1, 0]}>
+    <group ref={playerRef} position={[0, 0, 0]}>
       <primitive 
         ref={modelRef}
         object={model} 
