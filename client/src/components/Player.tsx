@@ -412,37 +412,37 @@ export default function Player() {
       console.log('🔒 Y POSITION LOCKED: Corrected to 4.0 (as required)');
     }
     
-    // Terrain-based movement boundaries - keep character within the 100x100 ground area
-    const terrainBoundary = 48; // Slightly smaller than the 50-unit terrain radius for safety buffer
+    // Terrain-based movement boundaries - keep character within the MASSIVE 16,000x16,000 world
+    const terrainBoundary = 7900; // Slightly smaller than 8000 for safety buffer (16,000/2 = 8000)
     let hitBoundary = false;
     
     // X-axis boundary check (left/right movement)
     if (player.position.x > terrainBoundary) {
       player.position.x = terrainBoundary;
       hitBoundary = true;
-      console.log('🚧 TERRAIN BOUNDARY HIT: Right edge - staying within ground area');
+      console.log('🚧 TERRAIN BOUNDARY HIT: Right edge - staying within massive world area');
     } else if (player.position.x < -terrainBoundary) {
       player.position.x = -terrainBoundary;
       hitBoundary = true;
-      console.log('🚧 TERRAIN BOUNDARY HIT: Left edge - staying within ground area');
+      console.log('🚧 TERRAIN BOUNDARY HIT: Left edge - staying within massive world area');
     }
     
     // Z-axis boundary check (forward/backward movement)
     if (player.position.z > terrainBoundary) {
       player.position.z = terrainBoundary;
       hitBoundary = true;
-      console.log('🚧 TERRAIN BOUNDARY HIT: Front edge - staying within ground area');
+      console.log('🚧 TERRAIN BOUNDARY HIT: Front edge - staying within massive world area');
     } else if (player.position.z < -terrainBoundary) {
       player.position.z = -terrainBoundary;
       hitBoundary = true;
-      console.log('🚧 TERRAIN BOUNDARY HIT: Back edge - staying within ground area');
+      console.log('🚧 TERRAIN BOUNDARY HIT: Back edge - staying within massive world area');
     }
     
     if (hitBoundary) {
-      console.log(`🏔️ Character contained within terrain: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)}) - Ground area: ${terrainBoundary*2}x${terrainBoundary*2} units`);
+      console.log(`🏔️ Character contained within MASSIVE terrain: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)}) - World area: ${terrainBoundary*2}x${terrainBoundary*2} units (16,000x16,000 total)`);
       playHit(); // Audio feedback when hitting boundary
-    } else if (playerIsMoving) {
-      console.log(`🌍 Moving within terrain bounds: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)})`);
+    } else if (playerIsMoving && shouldLog()) {
+      console.log(`🌍 Moving within massive world: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)}) - Boundaries: ±${terrainBoundary}`);
     }
     
     // Camera follows player smoothly
