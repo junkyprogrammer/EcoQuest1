@@ -17,7 +17,8 @@ export enum Controls {
   leftward = 'leftward',
   rightward = 'rightward',
   interact = 'interact',
-  jump = 'jump'
+  jump = 'jump',
+  sprint = 'sprint'
 }
 
 const controls = [
@@ -25,8 +26,9 @@ const controls = [
   { name: Controls.backward, keys: ["KeyS", "ArrowDown"] },
   { name: Controls.leftward, keys: ["KeyA", "ArrowLeft"] },
   { name: Controls.rightward, keys: ["KeyD", "ArrowRight"] },
-  { name: Controls.interact, keys: ["KeyE", "Space"] },
-  { name: Controls.jump, keys: ["KeyJ"] },
+  { name: Controls.interact, keys: ["KeyE"] },
+  { name: Controls.jump, keys: ["KeyJ", "Space"] },
+  { name: Controls.sprint, keys: ["ShiftLeft", "ShiftRight"] },
 ];
 
 const queryClient = new QueryClient();

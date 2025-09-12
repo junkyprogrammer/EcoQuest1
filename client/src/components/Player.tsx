@@ -40,6 +40,9 @@ export default function Player() {
   const armSwingAmount = useRef(0.3);
   const headBobAmount = useRef(0.05);
   const legLiftHeight = useRef(0.2);
+  
+  // Track current animation action
+  const currentActionRef = useRef<string>('idle');
 
   useEffect(() => {
     // Log when controls change
@@ -49,6 +52,42 @@ export default function Player() {
     );
     return unsubscribe;
   }, [subscribe]);
+
+  // Initialize animations and setup skeletal animation system
+  useEffect(() => {
+    if (animations.length > 0) {
+      console.log('Available animations:', animations.map(anim => anim.name));
+      // Start with idle animation
+      if (actions.idle) {
+        actions.idle.play();
+        currentActionRef.current = 'idle';
+        console.log('Started idle animation');
+      }
+    } else {
+      console.log('No animations found in character model - using procedural animations');
+    }
+  }, [animations, actions]);
+
+  // Handle animation state changes with cross-fading
+  useEffect(() => {
+    if (!mixer || animations.length === 0) return;
+
+    const nextAction = animationState === 'idle' ? 'idle' : 
+                      animationState === 'walking' ? 'walk' : 
+                      animationState === 'running' ? 'run' : 'idle';
+
+    if (nextAction !== currentActionRef.current) {
+      const current = actions[currentActionRef.current];
+      const next = actions[nextAction];
+      
+      if (current && next) {
+        console.log(`Animation transition: ${currentActionRef.current} -> ${nextAction}`);
+        current.fadeOut(0.25);
+        next.reset().fadeIn(0.25).play();
+        currentActionRef.current = nextAction;
+      }
+    }
+  }, [animationState, actions, mixer, animations]);
 
   useFrame((state, delta) => {
     if (!playerRef.current) return;
@@ -106,12 +145,14 @@ export default function Player() {
       isOnGround.current = false;
       playHit();
     } else if (isMoving && isOnGround.current) {
-      // Different walking speeds like in battle royale games
-      const movementSpeed = moveVector.length();
-      if (movementSpeed > 0.8) {
+      // Use Shift key for sprint/run like in battle royale games
+      const isRunning = controls.sprint; // Proper sprint key like Free Fire/BGMI
+      if (isRunning) {
         setAnimationState('running');
+        console.log('Animation state: RUNNING (Sprint active)');
       } else {
         setAnimationState('walking');
+        console.log('Animation state: WALKING');
       }
     } else if (isOnGround.current) {
       setAnimationState('idle');
@@ -134,9 +175,14 @@ export default function Player() {
       isOnGround.current = true;
     }
 
+    // Update animation mixer for skeletal animations
+    if (mixer) {
+      mixer.update(delta);
+    }
+
     // Realistic walking animation system like Free Fire/BGMI
-    if ((animationState === 'walking' || animationState === 'running') && isMoving) {
-      // Walking speed affects animation speed
+    if (animations.length === 0 && (animationState === 'walking' || animationState === 'running') && isMoving) {
+      // Fallback procedural animations when no clips are available
       const walkSpeed = animationState === 'running' ? 12 : 8;
       walkPhase.current += delta * walkSpeed;
       
@@ -164,39 +210,43 @@ export default function Player() {
           character.rotation.x = THREE.MathUtils.lerp(character.rotation.x, 0, delta * 5);
         }
         
-        // Traverse model to find and animate limbs
+        // Traverse model to find and animate limbs for realistic walking
         character.traverse((child) => {
-          if (child.name.toLowerCase().includes('leg') && child.name.toLowerCase().includes('left')) {
-            child.rotation.x = leftLegPhase * 0.5;
-            child.position.y = Math.max(0, leftLegPhase * legLiftHeight.current);
-          }
-          if (child.name.toLowerCase().includes('leg') && child.name.toLowerCase().includes('right')) {
-            child.rotation.x = rightLegPhase * 0.5;
-            child.position.y = Math.max(0, rightLegPhase * legLiftHeight.current);
-          }
-          if (child.name.toLowerCase().includes('arm') && child.name.toLowerCase().includes('left')) {
-            child.rotation.x = leftArmPhase * armSwingAmount.current;
-          }
-          if (child.name.toLowerCase().includes('arm') && child.name.toLowerCase().includes('right')) {
-            child.rotation.x = rightArmPhase * armSwingAmount.current;
+          if (child.type === 'Bone' || child.type === 'Object3D' || child.name.includes('Bone')) {
+            // Left leg animation
+            if (child.name.toLowerCase().includes('left') && 
+                (child.name.toLowerCase().includes('leg') || child.name.toLowerCase().includes('thigh') || child.name.toLowerCase().includes('foot'))) {
+              child.rotation.x = leftLegPhase * 0.8;
+              child.position.z = Math.sin(leftLegPhase) * 0.1;
+            }
+            // Right leg animation  
+            if (child.name.toLowerCase().includes('right') && 
+                (child.name.toLowerCase().includes('leg') || child.name.toLowerCase().includes('thigh') || child.name.toLowerCase().includes('foot'))) {
+              child.rotation.x = rightLegPhase * 0.8;
+              child.position.z = Math.sin(rightLegPhase) * 0.1;
+            }
+            // Left arm animation
+            if (child.name.toLowerCase().includes('left') && 
+                (child.name.toLowerCase().includes('arm') || child.name.toLowerCase().includes('shoulder') || child.name.toLowerCase().includes('hand'))) {
+              child.rotation.x = leftArmPhase * armSwingAmount.current;
+            }
+            // Right arm animation
+            if (child.name.toLowerCase().includes('right') && 
+                (child.name.toLowerCase().includes('arm') || child.name.toLowerCase().includes('shoulder') || child.name.toLowerCase().includes('hand'))) {
+              child.rotation.x = rightArmPhase * armSwingAmount.current;
+            }
           }
         });
+        
+        console.log(`Procedural animation: ${animationState}, walkPhase: ${walkPhase.current.toFixed(2)}, Sprint: ${controls.sprint}`);
       }
-    } else {
-      // Smoothly return to idle pose
+    } else if (animations.length === 0) {
+      // Smoothly return to idle pose for procedural animations
       if (playerRef.current?.children[0]) {
         const character = playerRef.current.children[0];
         character.position.y = THREE.MathUtils.lerp(character.position.y, 0, delta * 5);
         character.rotation.z = THREE.MathUtils.lerp(character.rotation.z, 0, delta * 5);
         character.rotation.x = THREE.MathUtils.lerp(character.rotation.x, 0, delta * 5);
-        
-        // Reset limb positions smoothly
-        character.traverse((child) => {
-          if (child.name.toLowerCase().includes('leg') || child.name.toLowerCase().includes('arm')) {
-            child.rotation.x = THREE.MathUtils.lerp(child.rotation.x, 0, delta * 5);
-            child.position.y = THREE.MathUtils.lerp(child.position.y, 0, delta * 5);
-          }
-        });
       }
     }
 
