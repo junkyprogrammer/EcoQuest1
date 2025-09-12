@@ -353,7 +353,6 @@ export default function EcosystemSelection() {
           padding: '12px 24px',
           background: 'rgba(255, 255, 255, 0.2)',
           color: 'white',
-          border: 'none',
           borderRadius: '25px',
           fontSize: '1.1rem',
           fontWeight: '600',
