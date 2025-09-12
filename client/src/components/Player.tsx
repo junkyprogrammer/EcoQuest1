@@ -38,10 +38,10 @@ export default function Player() {
   const gravity = 25;
   const isOnGround = useRef(true);
   
-  // Character positioning - ensure character stands properly on ground
+  // Character positioning - position character below ground level as requested
   const characterScale = 2.5; // Increased scale for better visibility
   const characterHeight = characterScale * 1.0; // Approximate height based on scale
-  const groundLevel = characterHeight / 2; // Character center should be above ground level
+  const groundLevel = -characterHeight / 2; // Character center positioned below ground level (underground)
 
   // Keyboard input detection with clear logging
   useEffect(() => {
@@ -161,13 +161,13 @@ export default function Player() {
     velocity.current.y -= gravity * delta;
     player.position.y += velocity.current.y * delta;
     
-    // Ground collision - ensure character feet are on terrain surface
-    if (player.position.y <= groundLevel) {
+    // Ground collision - keep character below ground level (underground)
+    if (player.position.y >= 0) {
       player.position.y = groundLevel;
       velocity.current.y = 0;
       isOnGround.current = true;
       
-      console.log(`🏃 Character grounded at Y: ${groundLevel.toFixed(2)} (feet on terrain)`);
+      console.log(`🏃 Character underground at Y: ${groundLevel.toFixed(2)} (below terrain surface)`);
       
       // Return to idle/walking when landing
       if (animationState === 'jumping') {
@@ -196,14 +196,14 @@ export default function Player() {
     camera.lookAt(player.position);
   });
 
-  // Initialize character at proper height above ground
+  // Initialize character below ground level as requested
   useEffect(() => {
     if (playerRef.current) {
       playerRef.current.position.set(0, groundLevel, 0);
-      console.log(`🎯 Character initialized at proper height (0,${groundLevel.toFixed(2)},0)`);
-      console.log('👟 Character feet now touch the ground surface');
-      console.log('📷 Camera setup for optimal viewing');
-      console.log(`📏 Character scale: ${characterScale}, Height: ${characterHeight.toFixed(2)}, Ground level: ${groundLevel.toFixed(2)}`);
+      console.log(`🎯 Character initialized underground (0,${groundLevel.toFixed(2)},0)`);
+      console.log('👟 Character positioned below the ground surface as requested');
+      console.log('📷 Camera setup for optimal underground viewing');
+      console.log(`📏 Character scale: ${characterScale}, Height: ${characterHeight.toFixed(2)}, Underground level: ${groundLevel.toFixed(2)}`);
     }
   }, [groundLevel, characterHeight, characterScale]);
 
@@ -228,8 +228,8 @@ export default function Player() {
         <meshBasicMaterial color="red" transparent opacity={0.8} />
       </mesh>
       
-      {/* Ground level indicator - shows where terrain surface is */}
-      <mesh position={[0, -groundLevel, 0]}>
+      {/* Ground level indicator - shows where terrain surface is (Y=0) */}
+      <mesh position={[0, 0, 0]}>
         <boxGeometry args={[1, 0.1, 1]} />
         <meshBasicMaterial color="yellow" transparent opacity={0.5} />
       </mesh>
