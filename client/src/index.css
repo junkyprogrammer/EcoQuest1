@@ -28,3 +28,11 @@ canvas {
   height: 100% !important;
   touch-action: none;
 }
+
+/* Inventory toggle button hover effect */
+.inventory-toggle-btn:hover {
+  background: rgba(139, 195, 74, 0.2) !important;
+  border-color: rgba(139, 195, 74, 0.4) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 195, 74, 0.3);
+}

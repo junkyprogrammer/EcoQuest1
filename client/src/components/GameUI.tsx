@@ -32,6 +32,7 @@ export default function GameUI() {
   const [subscribe, get] = useKeyboardControls<Controls>();
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [isInventoryExpanded, setIsInventoryExpanded] = useState(false);
 
   // Show tutorial on first level
   useEffect(() => {
@@ -225,29 +226,86 @@ export default function GameUI() {
           </div>
         </div>
         
-        <div>
+        <div style={{ maxWidth: '350px', minWidth: '200px' }}>
           <div style={{ 
-            fontSize: '16px', 
-            marginBottom: '8px',
-            color: '#e0e0e0',
-            fontWeight: '600'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '8px'
           }}>
-            Inventory:
-          </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {Object.entries(inventory).map(([item, count]) => (
-              <span key={item} style={{ 
-                background: 'linear-gradient(135deg, #4CAF50, #45a049)',
-                padding: '4px 12px', 
-                borderRadius: '8px',
-                fontSize: '13px',
+            <div style={{ 
+              fontSize: '16px', 
+              color: '#e0e0e0',
+              fontWeight: '600'
+            }}>
+              Inventory:
+            </div>
+            <button
+              className="inventory-toggle-btn"
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                color: '#8BC34A',
+                fontSize: '12px',
                 fontWeight: '600',
-                boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
-              }}>
-                {item}: {count}
-              </span>
-            ))}
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                pointerEvents: 'auto'
+              }}
+              onClick={() => setIsInventoryExpanded(!isInventoryExpanded)}
+            >
+              {isInventoryExpanded ? '▼ Less' : '▶ More'}
+            </button>
+          </div>
+          
+          <div style={{ 
+            display: 'flex', 
+            gap: '10px', 
+            flexWrap: 'wrap',
+            maxHeight: isInventoryExpanded ? '150px' : '32px',
+            overflow: 'hidden',
+            transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative'
+          }}>
+            {(() => {
+              const inventoryItems = Object.entries(inventory);
+              const itemsToShow = isInventoryExpanded ? inventoryItems : inventoryItems.slice(0, 3);
+              
+              return (
+                <>
+                  {itemsToShow.map(([item, count]) => (
+                    <span key={item} style={{ 
+                      background: 'linear-gradient(135deg, #4CAF50, #45a049)',
+                      padding: '4px 12px', 
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {item}: {count}
+                    </span>
+                  ))}
+                  {!isInventoryExpanded && inventoryItems.length > 3 && (
+                    <span style={{ 
+                      color: '#8BC34A',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}>
+                      +{inventoryItems.length - 3} more...
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
