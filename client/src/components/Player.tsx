@@ -33,14 +33,28 @@ export default function Player() {
   const targetRotation = useRef(0);
   const jumpAnimationTime = useRef(0);
   const runningEffectTime = useRef(0);
+  const walkingTime = useRef(0);
   const [isJumping, setIsJumping] = useState(false);
   
   // Enhanced movement constants
   const moveSpeed = 8;
   const runSpeed = 12;
   const rotationSpeed = 8; // Speed of character rotation
-  const jumpAnimationDuration = 0.6; // Duration of jump animation
+  const jumpAnimationDuration = 1.0; // Extended duration for more dramatic jump
   const runningEffectIntensity = 1.2; // Running visual effect intensity
+  
+  // Minecraft-like walking animation constants
+  const walkingBobSpeed = 6; // Speed of walking bob animation
+  const walkingBobIntensity = 0.2; // How much the character bobs up/down
+  const walkingSwayIntensity = 0.1; // Arm/leg sway simulation
+  const walkingTiltIntensity = 0.08; // Character tilting during movement
+  const runningBobSpeed = 10; // Faster bob for running
+  const runningBobIntensity = 0.35; // More intense bob for running
+  
+  // Enhanced jump effects constants
+  const jumpScaleIntensity = 0.8; // More dramatic scale changes
+  const jumpRotationIntensity = 0.3; // Enhanced rotation during jump
+  const jumpGlowIntensity = 1.5; // Visual glow effect during jump
   
   // Character positioning - position character well above ground level for maximum visibility
   const characterScale = 2.5; // Increased scale for better visibility
@@ -126,13 +140,13 @@ export default function Player() {
       console.log('🎮 D - Moving RIGHT');
     }
     
-    // Enhanced jump input - Visual effects only, NO Y position changes
+    // ENHANCED DRAMATIC JUMP INPUT - Visual effects only, NO Y position changes
     if (controls.jump && !isJumping) {
       setIsJumping(true);
       jumpAnimationTime.current = 0;
       setAnimationState('jumping');
       playHit();
-      console.log('🎮 SPACE - JUMPING! (Visual effects only - Y stays at 4.0)');
+      console.log('🚀 SPACE - DRAMATIC JUMPING! (Enhanced visual effects - Y stays at 4.0)');
     }
     
     // Normalize input for consistent movement speed
@@ -157,12 +171,13 @@ export default function Player() {
       const newZ = player.position.z + movement.z;
       player.position.set(newX, 4.0, newZ); // CRITICAL: Y always stays at 4.0
       
-      // Enhanced running effects
+      // Update walking/running animation timers
       if (controls.sprint) {
-        runningEffectTime.current += delta * 10;
-        console.log(`🏃‍♂️ ENHANCED RUNNING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s - Running effects active!`);
+        runningEffectTime.current += delta * runningBobSpeed;
+        console.log(`🏃‍♂️ MINECRAFT RUNNING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s - Bob effects active!`);
       } else {
-        console.log(`🚶 WALKING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s`);
+        walkingTime.current += delta * walkingBobSpeed;
+        console.log(`🚶 MINECRAFT WALKING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s - Bob effects active!`);
       }
       
       // Update animation state (only if not jumping)
@@ -177,6 +192,7 @@ export default function Player() {
       }
       setIsMoving(false);
       runningEffectTime.current = 0;
+      walkingTime.current = 0;
     }
     
     // ENHANCED ROTATION SYSTEM - Smooth character rotation to face movement direction
@@ -195,47 +211,86 @@ export default function Player() {
       console.log(`🔄 Character rotation: ${(currentRotation.current * 180 / Math.PI).toFixed(1)}° (facing movement direction)`);
     }
     
-    // ENHANCED JUMPING VISUAL EFFECTS - NO Y position changes, purely visual
+    // 🚀 ENHANCED DRAMATIC JUMPING VISUAL EFFECTS - NO Y position changes, purely visual
     if (isJumping) {
       jumpAnimationTime.current += delta;
       
-      // Bounce effect using scale and rotation (no Y position change)
+      // More dramatic bounce effect using advanced animation curves
       const jumpProgress = jumpAnimationTime.current / jumpAnimationDuration;
-      const bounceEffect = Math.sin(jumpProgress * Math.PI) * 0.3;
+      const bounceEffect = Math.sin(jumpProgress * Math.PI) * jumpScaleIntensity;
+      const squashStretch = Math.sin(jumpProgress * Math.PI * 2) * 0.2;
       
-      // Apply visual jump effects
+      // Apply dramatic visual jump effects
       const jumpScale = characterScale + bounceEffect;
-      const jumpRotationX = Math.sin(jumpProgress * Math.PI * 4) * 0.1;
+      const jumpRotationX = Math.sin(jumpProgress * Math.PI * 6) * jumpRotationIntensity;
+      const jumpRotationZ = Math.sin(jumpProgress * Math.PI * 3) * 0.15;
       
-      model.scale.setScalar(jumpScale);
+      // Enhanced scale effects - squash and stretch like Minecraft
+      const scaleX = jumpScale + squashStretch;
+      const scaleY = jumpScale - squashStretch * 0.5;
+      const scaleZ = jumpScale + squashStretch;
+      
+      model.scale.set(scaleX, scaleY, scaleZ);
       model.rotation.x = jumpRotationX;
+      model.rotation.z = jumpRotationZ;
       
-      console.log(`🦘 JUMP ANIMATION: Progress: ${(jumpProgress * 100).toFixed(1)}%, Scale: ${jumpScale.toFixed(2)}, Y stays at 4.0!`);
+      // Add glow effect simulation through rapid scale pulsing
+      if (jumpProgress < 0.3) {
+        const glowPulse = Math.sin(jumpProgress * Math.PI * 20) * 0.1;
+        model.scale.multiplyScalar(1 + glowPulse);
+      }
       
-      // End jump animation
+      console.log(`🚀 DRAMATIC JUMP: Progress: ${(jumpProgress * 100).toFixed(1)}%, Scale: (${scaleX.toFixed(2)}, ${scaleY.toFixed(2)}, ${scaleZ.toFixed(2)}), Y stays at 4.0!`);
+      
+      // End jump animation with smooth return
       if (jumpAnimationTime.current >= jumpAnimationDuration) {
         setIsJumping(false);
         jumpAnimationTime.current = 0;
         model.scale.setScalar(characterScale);
         model.rotation.x = 0;
+        model.rotation.z = 0;
         setAnimationState(playerIsMoving ? (controls.sprint ? 'running' : 'walking') : 'idle');
-        console.log('🎯 Jump animation complete - returned to normal state');
+        console.log('🎯 Dramatic jump animation complete - returned to normal state');
       }
     }
     
-    // ENHANCED RUNNING VISUAL EFFECTS
-    if (controls.sprint && playerIsMoving && !isJumping) {
-      // Add running bob effect
-      const bobEffect = Math.sin(runningEffectTime.current) * 0.1;
-      const runScale = characterScale + Math.abs(bobEffect) * 0.1;
-      
-      model.scale.setScalar(runScale);
-      model.rotation.z = bobEffect * 0.05;
-      
-      console.log(`💨 RUNNING EFFECTS: Bob: ${bobEffect.toFixed(2)}, Scale: ${runScale.toFixed(2)}, Enhanced running active!`);
+    // 🎮 MINECRAFT-LIKE WALKING AND RUNNING VISUAL EFFECTS
+    if (playerIsMoving && !isJumping) {
+      if (controls.sprint) {
+        // Enhanced Minecraft-style running effects
+        const runBob = Math.sin(runningEffectTime.current) * runningBobIntensity;
+        const runSway = Math.sin(runningEffectTime.current * 1.5) * walkingSwayIntensity * 1.5;
+        const runTilt = Math.sin(runningEffectTime.current * 0.7) * walkingTiltIntensity * 1.3;
+        
+        // Apply running scale and rotation effects
+        const runScaleY = characterScale + Math.abs(runBob) * 0.3;
+        const runScaleX = characterScale - Math.abs(runBob) * 0.1; // Slight compression during impact
+        
+        model.scale.set(runScaleX, runScaleY, characterScale);
+        model.rotation.x = runSway;
+        model.rotation.z = runBob * 0.1 + runTilt;
+        
+        console.log(`💨 MINECRAFT RUNNING: Bob: ${runBob.toFixed(2)}, Sway: ${runSway.toFixed(2)}, Tilt: ${runTilt.toFixed(2)}`);
+      } else {
+        // Minecraft-style walking effects
+        const walkBob = Math.sin(walkingTime.current) * walkingBobIntensity;
+        const walkSway = Math.sin(walkingTime.current * 1.2) * walkingSwayIntensity;
+        const walkTilt = Math.sin(walkingTime.current * 0.5) * walkingTiltIntensity;
+        
+        // Apply walking scale and rotation effects
+        const walkScaleY = characterScale + Math.abs(walkBob) * 0.5;
+        const walkScaleX = characterScale - Math.abs(walkBob) * 0.05;
+        
+        model.scale.set(walkScaleX, walkScaleY, characterScale);
+        model.rotation.x = walkSway;
+        model.rotation.z = walkBob * 0.08 + walkTilt;
+        
+        console.log(`🚶 MINECRAFT WALKING: Bob: ${walkBob.toFixed(2)}, Sway: ${walkSway.toFixed(2)}, Tilt: ${walkTilt.toFixed(2)}`);
+      }
     } else if (!isJumping) {
-      // Reset to normal scale when not running or jumping
+      // Reset to normal scale when idle (not moving or jumping)
       model.scale.setScalar(characterScale);
+      model.rotation.x = 0;
       model.rotation.z = 0;
     }
     
@@ -299,10 +354,19 @@ export default function Player() {
     }
   }, [groundLevel, characterHeight, characterScale]);
 
-  // Animation state logging
+  // Enhanced animation state logging
   useEffect(() => {
-    console.log(`🎭 Animation state: ${animationState}`);
-  }, [animationState]);
+    console.log(`🎭 Animation state: ${animationState} ${isJumping ? '(JUMPING)' : ''} ${isMoving ? '(MOVING)' : '(IDLE)'}`);
+    if (animationState === 'jumping') {
+      console.log('🚀 Enhanced dramatic jump effects activated!');
+    }
+    if (animationState === 'walking') {
+      console.log('🚶 Minecraft-style walking effects activated!');
+    }
+    if (animationState === 'running') {
+      console.log('💨 Minecraft-style running effects activated!');
+    }
+  }, [animationState, isJumping, isMoving]);
 
   return (
     <group ref={playerRef} position={[0, 0, 0]}>
@@ -314,10 +378,14 @@ export default function Player() {
         receiveShadow
       />
       
-      {/* Debug helpers - show player position and ground level */}
+      {/* Enhanced debug helpers - show player position and animation state */}
       <mesh position={[0, 0, 0]}>
         <boxGeometry args={[0.3, 0.3, 0.3]} />
-        <meshBasicMaterial color="red" transparent opacity={0.8} />
+        <meshBasicMaterial 
+          color={isJumping ? "orange" : (animationState === 'running' ? "blue" : (animationState === 'walking' ? "purple" : "red"))} 
+          transparent 
+          opacity={0.8} 
+        />
       </mesh>
       
       {/* Ground level indicator - shows where terrain surface is (Y=0) */}
@@ -326,11 +394,23 @@ export default function Player() {
         <meshBasicMaterial color="yellow" transparent opacity={0.5} />
       </mesh>
       
-      {/* Character feet position indicator */}
+      {/* Character feet position indicator with animation state */}
       <mesh position={[0, -characterHeight/2, 0]}>
         <boxGeometry args={[0.8, 0.1, 0.8]} />
-        <meshBasicMaterial color="green" transparent opacity={0.6} />
+        <meshBasicMaterial 
+          color={isJumping ? "cyan" : (isMoving ? "lime" : "green")} 
+          transparent 
+          opacity={0.6} 
+        />
       </mesh>
+      
+      {/* Jump effect visual indicator */}
+      {isJumping && (
+        <mesh position={[0, 1, 0]}>
+          <ringGeometry args={[1, 1.5, 8]} />
+          <meshBasicMaterial color="gold" transparent opacity={0.7} />
+        </mesh>
+      )}
     </group>
   );
 }
