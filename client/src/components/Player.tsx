@@ -80,23 +80,90 @@ export default function Player() {
     return unsubscribe;
   }, [subscribe]);
 
-  // Initialize animations and setup skeletal animation system
+  // Initialize animations and setup skeletal animation system with comprehensive debugging
   useEffect(() => {
+    console.log('=== NATHAN CHARACTER DEBUG START ===');
     console.log('Model loading complete. Checking for skeletal structure...');
     
-    // Check if model has skeleton
+    // Debug: Check FBX and model properties
+    console.log('FBX object:', fbx);
+    console.log('Cloned model:', model);
+    console.log('FBX animations count:', fbx.animations.length);
+    console.log('FBX children count:', fbx.children.length);
+    console.log('Model children count:', model.children.length);
+    
+    // Debug: Check if model has skeleton
     let hasSkinnedMesh = false;
     let boneCount = 0;
+    let meshCount = 0;
+    let geometryCount = 0;
+    let materialCount = 0;
+    let visibleMeshes = 0;
+    
     model.traverse((child) => {
+      console.log(`Child: ${child.name} | Type: ${child.type} | Visible: ${child.visible}`);
+      
       if ((child as any).isSkinnedMesh) {
         hasSkinnedMesh = true;
+        meshCount++;
+        if (child.visible) visibleMeshes++;
+        console.log(`  - SkinnedMesh: ${child.name}, Visible: ${child.visible}`);
+        
         if ((child as any).skeleton) {
           boneCount = (child as any).skeleton.bones.length;
+          console.log(`  - Skeleton bones: ${boneCount}`);
         }
+        
+        if ((child as any).material) {
+          materialCount++;
+          const material = (child as any).material;
+          console.log(`  - Material: ${material.name || 'unnamed'}, Type: ${material.type}`);
+          console.log(`  - Material visible: ${material.visible !== false}`);
+          console.log(`  - Material opacity: ${material.opacity || 1}`);
+          console.log(`  - Material transparent: ${material.transparent}`);
+        }
+        
+        if ((child as any).geometry) {
+          geometryCount++;
+          const geometry = (child as any).geometry;
+          console.log(`  - Geometry: vertices=${geometry.attributes?.position?.count || 0}`);
+        }
+      } else if ((child as any).isMesh) {
+        meshCount++;
+        if (child.visible) visibleMeshes++;
+        console.log(`  - Mesh: ${child.name}, Visible: ${child.visible}`);
+        
+        if ((child as any).material) {
+          materialCount++;
+          const material = (child as any).material;
+          console.log(`  - Material: ${material.name || 'unnamed'}, Type: ${material.type}`);
+          console.log(`  - Material visible: ${material.visible !== false}`);
+          console.log(`  - Material opacity: ${material.opacity || 1}`);
+        }
+      }
+      
+      // Log position and scale
+      if (child.position) {
+        console.log(`  - Position: (${child.position.x.toFixed(2)}, ${child.position.y.toFixed(2)}, ${child.position.z.toFixed(2)})`);
+      }
+      if (child.scale) {
+        console.log(`  - Scale: (${child.scale.x.toFixed(2)}, ${child.scale.y.toFixed(2)}, ${child.scale.z.toFixed(2)})`);
       }
     });
     
-    console.log(`Skeletal analysis: SkinnedMesh=${hasSkinnedMesh}, Bones=${boneCount}`);
+    console.log(`=== MESH SUMMARY ===`);
+    console.log(`- SkinnedMesh: ${hasSkinnedMesh}`);
+    console.log(`- Bone count: ${boneCount}`);
+    console.log(`- Total meshes: ${meshCount}`);
+    console.log(`- Visible meshes: ${visibleMeshes}`);
+    console.log(`- Geometries: ${geometryCount}`);
+    console.log(`- Materials: ${materialCount}`);
+    
+    // Debug: Model transform
+    console.log(`=== MODEL TRANSFORM ===`);
+    console.log(`- Model position: (${model.position.x}, ${model.position.y}, ${model.position.z})`);
+    console.log(`- Model scale: (${model.scale.x}, ${model.scale.y}, ${model.scale.z})`);
+    console.log(`- Model visible: ${model.visible}`);
     
     if (fbx.animations.length > 0) {
       console.log('Available animations:', fbx.animations.map(anim => anim.name));
@@ -122,6 +189,15 @@ export default function Player() {
     } else {
       console.log('No animations found - using procedural fallback');
     }
+    
+    // Final warning if no visible meshes
+    if (visibleMeshes === 0) {
+      console.warn('🚨 NO VISIBLE MESHES FOUND! This explains why character is invisible.');
+    } else {
+      console.log(`✅ Found ${visibleMeshes} visible meshes - character should be visible`);
+    }
+    
+    console.log('=== NATHAN CHARACTER DEBUG END ===');
   }, [fbx.animations, actions, clips, model]);
 
   // Handle animation state changes with cross-fading
@@ -573,15 +649,36 @@ export default function Player() {
       }
     }
 
-    // Enhanced boundary system with momentum preservation
-    const boundarySize = 45;
+    // Fixed boundary system to keep character in camera view
+    const boundarySize = 20; // Reduced from 45 to keep in camera view
+    const minZ = -10; // Don't let character go too far behind camera
+    const maxZ = 25;  // Reasonable forward limit
+    
+    // X boundary (left/right)
     if (Math.abs(player.position.x) > boundarySize) {
       player.position.x = Math.sign(player.position.x) * boundarySize;
-      momentum.current.x *= -0.3; // Soft bounce effect
+      momentum.current.x *= -0.3;
+      console.log(`X boundary hit: reset to ${player.position.x}`);
     }
-    if (Math.abs(player.position.z) > boundarySize) {
-      player.position.z = Math.sign(player.position.z) * boundarySize;
-      momentum.current.z *= -0.3; // Soft bounce effect
+    
+    // Z boundary (forward/backward) - CRITICAL FIX
+    if (player.position.z < minZ) {
+      player.position.z = minZ;
+      momentum.current.z = Math.max(0, momentum.current.z); // Stop backward momentum
+      console.log(`Z boundary hit (behind camera): reset to ${player.position.z}`);
+    } else if (player.position.z > maxZ) {
+      player.position.z = maxZ;
+      momentum.current.z = Math.min(0, momentum.current.z); // Stop forward momentum
+      console.log(`Z boundary hit (too far forward): reset to ${player.position.z}`);
+    }
+    
+    // Emergency reset if character somehow gets completely lost
+    const distanceFromOrigin = Math.sqrt(player.position.x * player.position.x + player.position.z * player.position.z);
+    if (distanceFromOrigin > 50) {
+      console.warn(`🚨 EMERGENCY RESET: Character too far from origin (${distanceFromOrigin.toFixed(1)})`);
+      player.position.set(0, player.position.y, 0);
+      momentum.current.set(0, 0, 0);
+      velocity.current.set(0, 0, 0);
     }
 
     // Update cooldowns
