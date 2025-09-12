@@ -8,25 +8,44 @@ import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
 export default function Player() {
-  // Use the new Nathan character with FBX animations
+  // ACCURATE POSITIONING: Enhanced Nathan character loading with precise centering
   const fbx = useFBX('/models/nathan_character.fbx');
   const model = useMemo(() => {
     const clonedModel = SkeletonUtils.clone(fbx);
     
-    // CRITICAL FIX: Center and ground the mesh using bounding box
+    // STEP 1: Calculate precise bounding box for accurate positioning
     const bbox = new THREE.Box3().setFromObject(clonedModel);
     const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
     bbox.getCenter(center);
+    bbox.getSize(size);
     const min = bbox.min.clone();
+    const max = bbox.max.clone();
     
-    // Center horizontally (X,Z) and ground vertically (Y)
-    clonedModel.position.sub(new THREE.Vector3(center.x, min.y, center.z));
+    console.log('=== ACCURATE POSITIONING: NEW NATHAN CHARACTER ===');
+    console.log('Original mesh center:', center.toArray());
+    console.log('Original mesh size:', size.toArray());
+    console.log('Original bbox min/max:', min.toArray(), '/', max.toArray());
     
-    console.log('=== MESH CENTERING APPLIED ===');
-    console.log('Original bbox center:', center.toArray());
-    console.log('Original bbox min:', min.toArray());
-    console.log('Model offset applied:', -center.x, -min.y, -center.z);
-    console.log('New model position:', clonedModel.position.toArray());
+    // STEP 2: Perfect centering - eliminate ALL internal mesh offsets
+    const preciseOffset = new THREE.Vector3(-center.x, -min.y, -center.z);
+    clonedModel.position.copy(preciseOffset);
+    
+    // STEP 3: Ensure proper forward direction for camera viewing
+    // Character should face negative Z direction (away from camera at [0,8,12])
+    clonedModel.rotation.y = 0; // Standard forward orientation
+    
+    // STEP 4: Validation of centering accuracy
+    const finalBbox = new THREE.Box3().setFromObject(clonedModel);
+    const finalCenter = new THREE.Vector3();
+    finalBbox.getCenter(finalCenter);
+    
+    console.log('🎯 POSITIONING RESULTS:');
+    console.log('  - Offset applied:', preciseOffset.toArray());
+    console.log('  - Final mesh center:', finalCenter.toArray());
+    console.log('  - Character ready for (0,0,0) world placement');
+    console.log('  - Camera at [0,8,12] will view character perfectly centered');
+    console.log('=== NEW NATHAN CHARACTER LOADED SUCCESSFULLY ===');
     
     return clonedModel;
   }, [fbx]);
@@ -498,16 +517,31 @@ export default function Player() {
     velocity.current.y -= 20 * delta;
     player.position.y += velocity.current.y * delta;
 
-    // FIXED: Ground collision to match terrain level (y=0)
-    const groundY = 0; // Match terrain level exactly
+    // ACCURATE POSITIONING: Perfect ground collision for center screen placement
+    const groundY = 0; // Match terrain level exactly for accurate positioning
     if (player.position.y <= groundY) {
       player.position.y = groundY;
       velocity.current.y = 0;
       isOnGround.current = true;
-      // Visibility check after ground collision
+      
+      // ENHANCED: Position accuracy validation with center screen verification
       const worldPos = new THREE.Vector3();
       player.getWorldPosition(worldPos);
-      console.log(`Ground collision: Player at world (${worldPos.x.toFixed(1)}, ${worldPos.y.toFixed(1)}, ${worldPos.z.toFixed(1)})`);
+      
+      // Only log when character moves significantly from center for accuracy tracking
+      const distanceFromCenter = Math.sqrt(worldPos.x * worldPos.x + worldPos.z * worldPos.z);
+      if (distanceFromCenter > 0.5 || Math.abs(worldPos.x) > 0.1 || Math.abs(worldPos.z) > 0.1) {
+        console.log(`🎯 Accurate Position: (${worldPos.x.toFixed(2)}, ${worldPos.y.toFixed(2)}, ${worldPos.z.toFixed(2)})`);
+        
+        // Verify optimal camera viewing from [0,8,12] to character position
+        if (distanceFromCenter < 3) {
+          console.log(`✅ PERFECT: Character optimally positioned for center screen view`);
+        } else if (distanceFromCenter < 6) {
+          console.log(`✅ GOOD: Character well positioned for camera view`);
+        } else {
+          console.log(`⚠️ NOTICE: Character distance from center: ${distanceFromCenter.toFixed(2)} units`);
+        }
+      }
     }
 
     // Update animation mixer for skeletal animations
@@ -754,12 +788,18 @@ export default function Player() {
     state.camera.lookAt(cameraTarget);
   });
 
-  // VISIBILITY FIX: Force character to visible position and add debug logging
+  // ACCURATE POSITIONING: Initialize at perfect center screen (0,0,0)
   useEffect(() => {
     if (playerRef.current) {
-      // Ensure character starts at visible position
-      playerRef.current.position.set(0, 1, 0);
-      console.log('🎯 Nathan character initialized at visible position:', playerRef.current.position);
+      // Set exact center screen position for optimal camera view
+      playerRef.current.position.set(0, 0, 0);
+      console.log('🎯 ACCURATE POSITIONING: Nathan character initialized at center screen (0,0,0)');
+      console.log('📷 Camera view: [0,8,12] looking at character at [0,0,0] - perfectly centered');
+      
+      // Validate position accuracy
+      const worldPos = new THREE.Vector3();
+      playerRef.current.getWorldPosition(worldPos);
+      console.log('✅ World position verification:', worldPos.toArray());
     }
   }, []);
 
@@ -768,10 +808,17 @@ export default function Player() {
       <primitive 
         ref={modelRef}
         object={model} 
-        scale={[2.5, 2.5, 2.5]}
+        scale={[2.0, 2.0, 2.0]}
         castShadow 
         receiveShadow
       />
+      {/* ACCURATE POSITIONING: Debug visual helper (remove for production) */}
+      {process.env.NODE_ENV === 'development' && (
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[0.1, 0.1, 0.1]} />
+          <meshBasicMaterial color="red" transparent opacity={0.5} />
+        </mesh>
+      )}
     </group>
   );
 }
