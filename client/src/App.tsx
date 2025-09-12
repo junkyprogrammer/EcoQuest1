@@ -62,24 +62,18 @@ function App() {
         const gl = testCanvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) ||
                    testCanvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
         
-        // Set WebGL support to false to use 2D fallback
-        setSupportsWebGL(false);
-        console.log("WebGL preflight check: using 2D fallback mode");
-        
-        // Original detection code (commented for now)
-        // if (gl) {
-        //   const ext = gl.getExtension('WEBGL_lose_context');
-        //   ext?.loseContext();
-        //   setSupportsWebGL(true);
-        //   console.log("WebGL preflight check: supported");
-        // } else {
-        //   setSupportsWebGL(false);
-        //   console.log("WebGL preflight check: not supported");
-        // }
+        if (gl) {
+          const ext = gl.getExtension('WEBGL_lose_context');
+          ext?.loseContext();
+          setSupportsWebGL(true);
+          console.log("WebGL preflight check: supported - using 3D mode");
+        } else {
+          setSupportsWebGL(false);
+          console.log("WebGL preflight check: not supported - using 2D fallback");
+        }
       } catch (error) {
-        // Still force WebGL support even on error
-        setSupportsWebGL(true);
-        console.log("WebGL preflight check: forcing support despite error", error);
+        setSupportsWebGL(false);
+        console.log("WebGL preflight check: error detected - using 2D fallback", error);
       }
     };
     

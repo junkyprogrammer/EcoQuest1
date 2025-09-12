@@ -65,6 +65,8 @@ export default function Fallback2DGame() {
     canvas.height = 400;
 
     function gameLoop() {
+      if (!canvas || !ctx) return;
+      
       const currentControls = getState();
       const player = playerRef.current;
       const camera = cameraRef.current;
