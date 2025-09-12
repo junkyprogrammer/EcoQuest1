@@ -37,6 +37,11 @@ export default function Player() {
   const jumpForce = 12;
   const gravity = 25;
   const isOnGround = useRef(true);
+  
+  // Character positioning - ensure character stands properly on ground
+  const characterScale = 2.5; // Increased scale for better visibility
+  const characterHeight = characterScale * 1.0; // Approximate height based on scale
+  const groundLevel = characterHeight / 2; // Character center should be above ground level
 
   // Keyboard input detection with clear logging
   useEffect(() => {
@@ -156,12 +161,13 @@ export default function Player() {
     velocity.current.y -= gravity * delta;
     player.position.y += velocity.current.y * delta;
     
-    // Ground collision
-    const groundLevel = 0;
+    // Ground collision - ensure character feet are on terrain surface
     if (player.position.y <= groundLevel) {
       player.position.y = groundLevel;
       velocity.current.y = 0;
       isOnGround.current = true;
+      
+      console.log(`🏃 Character grounded at Y: ${groundLevel.toFixed(2)} (feet on terrain)`);
       
       // Return to idle/walking when landing
       if (animationState === 'jumping') {
@@ -190,14 +196,16 @@ export default function Player() {
     camera.lookAt(player.position);
   });
 
-  // Initialize character at perfect center position
+  // Initialize character at proper height above ground
   useEffect(() => {
     if (playerRef.current) {
-      playerRef.current.position.set(0, 0, 0);
-      console.log('🎯 Character initialized at perfect center (0,0,0)');
-      console.log('📷 Camera setup for optimal viewing at [0,8,12]');
+      playerRef.current.position.set(0, groundLevel, 0);
+      console.log(`🎯 Character initialized at proper height (0,${groundLevel.toFixed(2)},0)`);
+      console.log('👟 Character feet now touch the ground surface');
+      console.log('📷 Camera setup for optimal viewing');
+      console.log(`📏 Character scale: ${characterScale}, Height: ${characterHeight.toFixed(2)}, Ground level: ${groundLevel.toFixed(2)}`);
     }
-  }, []);
+  }, [groundLevel, characterHeight, characterScale]);
 
   // Animation state logging
   useEffect(() => {
@@ -208,15 +216,28 @@ export default function Player() {
     <group ref={playerRef} position={[0, 0, 0]}>
       <primitive 
         object={model} 
-        scale={[2.0, 2.0, 2.0]}
+        scale={[characterScale, characterScale, characterScale]}
+        position={[0, -characterHeight/2, 0]}
         castShadow 
         receiveShadow
       />
       
-      {/* Debug helper - shows exact player position */}
+      {/* Debug helpers - show player position and ground level */}
       <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[0.2, 0.2, 0.2]} />
-        <meshBasicMaterial color="red" transparent opacity={0.7} />
+        <boxGeometry args={[0.3, 0.3, 0.3]} />
+        <meshBasicMaterial color="red" transparent opacity={0.8} />
+      </mesh>
+      
+      {/* Ground level indicator - shows where terrain surface is */}
+      <mesh position={[0, -groundLevel, 0]}>
+        <boxGeometry args={[1, 0.1, 1]} />
+        <meshBasicMaterial color="yellow" transparent opacity={0.5} />
+      </mesh>
+      
+      {/* Character feet position indicator */}
+      <mesh position={[0, -characterHeight/2, 0]}>
+        <boxGeometry args={[0.8, 0.1, 0.8]} />
+        <meshBasicMaterial color="green" transparent opacity={0.6} />
       </mesh>
     </group>
   );
