@@ -18,13 +18,29 @@ export default function Player() {
   const { addScore } = useGameState();
   const { playHit } = useAudio();
   
+  // Enhanced movement physics and state
   const velocity = useRef(new THREE.Vector3());
+  const momentum = useRef(new THREE.Vector3());
   const isOnGround = useRef(true);
-  const speed = 5;
-  const jumpForce = 8;
+  const isDashing = useRef(false);
+  const dashDirection = useRef(new THREE.Vector3());
+  const dashCooldown = useRef(0);
   
-  // Animation states for realistic walking like Free Fire/BGMI
-  const [animationState, setAnimationState] = useState<'idle' | 'walking' | 'running' | 'jumping'>('idle');
+  // Movement constants with enhanced dynamics
+  const baseSpeed = 6;
+  const runSpeedMultiplier = 1.8;
+  const dashSpeedMultiplier = 3.5;
+  const acceleration = 25;
+  const deceleration = 15;
+  const rotationSpeed = 12;
+  const jumpForce = 10;
+  const dashDuration = 0.3;
+  const dashCooldownTime = 1.0;
+  
+  // Enhanced animation states for dynamic movement
+  const [animationState, setAnimationState] = useState<'idle' | 'walking' | 'running' | 'jumping' | 'dashing' | 'strafe_left' | 'strafe_right' | 'walking_backward'>('idle');
+  const [movementDirection, setMovementDirection] = useState(new THREE.Vector3());
+  const [lastTapTimes, setLastTapTimes] = useState<{[key: string]: number}>({});
   const walkCycle = useRef(0);
   const jumpAnimation = useRef(0);
   const currentRotation = useRef(0);
@@ -38,12 +54,19 @@ export default function Player() {
   const torso = useRef(new THREE.Object3D());
   const head = useRef(new THREE.Object3D());
   
-  // Animation timing for realistic walking
+  // Enhanced animation timing and physics
   const walkPhase = useRef(0);
   const stepLength = useRef(0.8);
   const armSwingAmount = useRef(0.3);
   const headBobAmount = useRef(0.05);
   const legLiftHeight = useRef(0.2);
+  const bodyLeanAmount = useRef(0.1);
+  const speedBasedAnimationMultiplier = useRef(1);
+  
+  // Camera enhancement variables
+  const cameraOffset = useRef(new THREE.Vector3(0, 8, 12));
+  const targetCameraOffset = useRef(new THREE.Vector3(0, 8, 12));
+  const cameraLookAhead = useRef(new THREE.Vector3());
   
   // Track current animation action
   const currentActionRef = useRef<string>('idle');
@@ -128,80 +151,181 @@ export default function Player() {
     }
   }, [animationState, actions, mixer, gltf.animations, clips]);
 
+  // Enhanced dash mechanics with dedicated dash key
+  const handleDashInput = (direction: string) => {
+    const currentTime = Date.now();
+    const lastTap = lastTapTimes[direction] || 0;
+    const timeDiff = currentTime - lastTap;
+    
+    // Enhanced dash system - either double-tap movement keys OR dedicated dash key
+    const currentControls = get();
+    const shouldDash = (timeDiff < 300 && dashCooldown.current <= 0) || (currentControls.dash && dashCooldown.current <= 0);
+    
+    if (shouldDash) {
+      isDashing.current = true;
+      dashCooldown.current = dashCooldownTime;
+      setAnimationState('dashing');
+      
+      // Enhanced dash direction calculation
+      if (currentControls.forward) dashDirection.current.set(0, 0, -1);
+      else if (currentControls.backward) dashDirection.current.set(0, 0, 1);
+      else if (currentControls.leftward) dashDirection.current.set(-1, 0, 0);
+      else if (currentControls.rightward) dashDirection.current.set(1, 0, 0);
+      else dashDirection.current.set(0, 0, -1); // Default forward dash
+      
+      playHit(); // Dash sound effect
+      
+      // Enhanced dash end transition
+      setTimeout(() => {
+        isDashing.current = false;
+        const updatedControls = get();
+        if (updatedControls.forward || updatedControls.backward || updatedControls.leftward || updatedControls.rightward) {
+          setAnimationState(updatedControls.sprint ? 'running' : 'walking');
+        } else {
+          setAnimationState('idle');
+        }
+      }, dashDuration * 1000);
+    }
+    
+    setLastTapTimes(prev => ({ ...prev, [direction]: currentTime }));
+  };
+
   useFrame((state, delta) => {
     if (!playerRef.current) return;
 
     const controls = get();
     const player = playerRef.current;
 
-    // Movement
-    const moveVector = new THREE.Vector3();
+    // Enhanced movement system with momentum
+    const inputVector = new THREE.Vector3();
     let isMoving = false;
+    let movementType = 'forward';
     
+    // Enhanced movement input with precision mode support
+    const precisionMode = controls.precision_mode;
+    const walkMode = controls.walk;
+    const speedMultiplier = precisionMode ? 0.4 : walkMode ? 0.7 : 1.0;
+    
+    // Enhanced directional movement with strafe support
     if (controls.forward) {
-      moveVector.z -= 1;
-      targetRotation.current = 0;
+      inputVector.z -= 1;
       isMoving = true;
+      movementType = 'forward';
+      handleDashInput('forward');
     }
     if (controls.backward) {
-      moveVector.z += 1;
-      targetRotation.current = Math.PI;
+      inputVector.z += 1;
       isMoving = true;
+      movementType = 'backward';
+      handleDashInput('backward');
     }
     if (controls.leftward) {
-      moveVector.x -= 1;
-      targetRotation.current = Math.PI / 2;
+      inputVector.x -= 1;
       isMoving = true;
+      movementType = 'leftward';
+      handleDashInput('leftward');
     }
     if (controls.rightward) {
-      moveVector.x += 1;
-      targetRotation.current = -Math.PI / 2;
+      inputVector.x += 1;
       isMoving = true;
+      movementType = 'rightward';
+      handleDashInput('rightward');
+    }
+    
+    // Dedicated strafe controls
+    if (controls.strafe_left && !controls.leftward) {
+      inputVector.x -= 1;
+      isMoving = true;
+      movementType = 'strafe_left';
+    }
+    if (controls.strafe_right && !controls.rightward) {
+      inputVector.x += 1;
+      isMoving = true;
+      movementType = 'strafe_right';
+    }
+    
+    // Apply speed modifiers
+    if (inputVector.length() > 0) {
+      inputVector.normalize().multiplyScalar(speedMultiplier);
     }
 
-    // Handle diagonal movement rotations
-    if (controls.forward && controls.rightward) {
-      targetRotation.current = -Math.PI / 4;
-    } else if (controls.forward && controls.leftward) {
-      targetRotation.current = Math.PI / 4;
-    } else if (controls.backward && controls.rightward) {
-      targetRotation.current = -3 * Math.PI / 4;
-    } else if (controls.backward && controls.leftward) {
-      targetRotation.current = 3 * Math.PI / 4;
+    // Normalize input for consistent speed in all directions
+    if (inputVector.length() > 0) {
+      inputVector.normalize();
+    }
+    
+    // Calculate target rotation for smooth 360-degree movement
+    if (isMoving) {
+      targetRotation.current = Math.atan2(inputVector.x, inputVector.z);
     }
 
-    // Smooth rotation
+    // Enhanced smooth rotation with momentum
     const rotationDiff = targetRotation.current - currentRotation.current;
-    const shortestAngle = ((rotationDiff + Math.PI) % (2 * Math.PI)) - Math.PI;
-    currentRotation.current += shortestAngle * 8 * delta;
+    let shortestAngle = ((rotationDiff + Math.PI) % (2 * Math.PI)) - Math.PI;
+    
+    // Faster rotation during dash for responsiveness
+    const currentRotationSpeed = isDashing.current ? rotationSpeed * 2 : rotationSpeed;
+    currentRotation.current += shortestAngle * currentRotationSpeed * delta;
     player.rotation.y = currentRotation.current;
 
-    // Animation state management like Free Fire/BGMI
+    // Enhanced movement with multiple speed modes
+    let targetSpeed = baseSpeed;
+    
+    if (isDashing.current) {
+      targetSpeed *= dashSpeedMultiplier;
+    } else if (controls.sprint && !walkMode && !precisionMode) {
+      targetSpeed *= runSpeedMultiplier;
+    } else if (walkMode) {
+      targetSpeed *= 0.7; // Walk mode
+    } else if (precisionMode) {
+      targetSpeed *= 0.4; // Precision mode
+    }
+    
+    // Apply input-based speed modifier
+    targetSpeed *= Math.max(0.1, inputVector.length());
+    
+    if (isMoving) {
+      // Accelerate towards target velocity
+      const targetVelocity = inputVector.clone().multiplyScalar(targetSpeed);
+      momentum.current.lerp(targetVelocity, acceleration * delta);
+    } else {
+      // Decelerate when no input
+      momentum.current.lerp(new THREE.Vector3(0, 0, 0), deceleration * delta);
+    }
+    
+    // Apply momentum to player position
+    const frameMovement = momentum.current.clone().multiplyScalar(delta);
+    player.position.add(frameMovement);
+    
+    // Enhanced animation state management with new states
     if (controls.jump && isOnGround.current) {
       setAnimationState('jumping');
       jumpAnimation.current = 0;
       velocity.current.y = jumpForce;
       isOnGround.current = false;
       playHit();
+    } else if (isDashing.current) {
+      // Dashing state - already set in handleDashInput
     } else if (isMoving && isOnGround.current) {
-      // Use Shift key for sprint/run like in battle royale games
-      const isRunning = controls.sprint; // Proper sprint key like Free Fire/BGMI
-      if (isRunning) {
-        setAnimationState('running');
-        console.log('Animation state: RUNNING (Sprint active)');
+      // Determine movement animation based on direction and speed
+      if (movementType === 'backward') {
+        setAnimationState('walking_backward');
+      } else if (movementType === 'leftward' && !controls.forward && !controls.backward) {
+        setAnimationState('strafe_left');
+      } else if (movementType === 'rightward' && !controls.forward && !controls.backward) {
+        setAnimationState('strafe_right');
       } else {
-        setAnimationState('walking');
-        console.log('Animation state: WALKING');
+        const isRunning = controls.sprint;
+        setAnimationState(isRunning ? 'running' : 'walking');
       }
+      
+      console.log(`Enhanced Animation: ${animationState}, Movement: ${movementType}, Sprint: ${controls.sprint}`);
     } else if (isOnGround.current) {
       setAnimationState('idle');
     }
-
-    // Normalize movement to prevent diagonal speed boost
-    if (moveVector.length() > 0) {
-      moveVector.normalize().multiplyScalar(speed * delta);
-      player.position.add(moveVector);
-    }
+    
+    // Update movement direction for animations
+    setMovementDirection(momentum.current.clone().normalize());
 
     // Apply gravity
     velocity.current.y -= 20 * delta;
@@ -219,111 +343,209 @@ export default function Player() {
       mixer.update(delta);
     }
 
-    // Realistic walking animation system like Free Fire/BGMI
-    if (gltf.animations.length === 0 && (animationState === 'walking' || animationState === 'running') && isMoving) {
-      // Fallback procedural animations when no clips are available
-      const walkSpeed = animationState === 'running' ? 12 : 8;
-      walkPhase.current += delta * walkSpeed;
+    // Enhanced procedural animation system for all movement states
+    if (gltf.animations.length === 0) {
+      const character = playerRef.current?.children[0];
+      if (!character) return;
       
-      // Create realistic walking cycle with proper leg and arm movements
-      const leftLegPhase = Math.sin(walkPhase.current);
-      const rightLegPhase = Math.sin(walkPhase.current + Math.PI);
-      const leftArmPhase = Math.sin(walkPhase.current + Math.PI); // Arms opposite to legs
-      const rightArmPhase = Math.sin(walkPhase.current);
+      // Determine animation speed based on state and momentum
+      const currentSpeed = momentum.current.length();
+      const normalizedSpeed = Math.min(currentSpeed / baseSpeed, 2.0);
       
-      if (playerRef.current?.children[0]) {
-        const character = playerRef.current.children[0];
+      if (animationState !== 'idle' && isMoving) {
+        let walkSpeed = 8; // Base walk speed
+        let amplitudeMultiplier = 1;
+        let bodyLeanDirection = 0;
         
-        // Natural head bobbing like in popular games
-        const headBob = Math.sin(walkPhase.current * 2) * headBobAmount.current;
-        character.position.y = headBob;
-        
-        // Subtle body lean during walking
-        const bodyLean = Math.sin(walkPhase.current) * 0.02;
-        character.rotation.z = bodyLean;
-        
-        // Forward lean while running like in action games
-        if (animationState === 'running') {
-          character.rotation.x = -0.1;
-        } else {
-          character.rotation.x = THREE.MathUtils.lerp(character.rotation.x, 0, delta * 5);
+        // Adjust animation parameters based on state
+        switch (animationState) {
+          case 'running':
+            walkSpeed = 12;
+            amplitudeMultiplier = 1.3;
+            character.rotation.x = -0.1; // Forward lean
+            break;
+          case 'dashing':
+            walkSpeed = 20;
+            amplitudeMultiplier = 1.8;
+            character.rotation.x = -0.2; // Aggressive forward lean
+            bodyLeanDirection = Math.sin(state.clock.elapsedTime * 15) * 0.15;
+            break;
+          case 'walking_backward':
+            walkSpeed = 6;
+            amplitudeMultiplier = 0.8;
+            character.rotation.x = 0.05; // Slight backward lean
+            break;
+          case 'strafe_left':
+            walkSpeed = 7;
+            amplitudeMultiplier = 0.9;
+            bodyLeanDirection = -0.1; // Lean into the strafe
+            break;
+          case 'strafe_right':
+            walkSpeed = 7;
+            amplitudeMultiplier = 0.9;
+            bodyLeanDirection = 0.1; // Lean into the strafe
+            break;
+          default:
+            character.rotation.x = THREE.MathUtils.lerp(character.rotation.x, 0, delta * 5);
         }
         
-        // Traverse model to find and animate limbs for realistic walking
+        // Update walk phase with speed-based multiplier
+        walkPhase.current += delta * walkSpeed * speedBasedAnimationMultiplier.current;
+        
+        // Enhanced leg and arm animations
+        const leftLegPhase = Math.sin(walkPhase.current) * amplitudeMultiplier;
+        const rightLegPhase = Math.sin(walkPhase.current + Math.PI) * amplitudeMultiplier;
+        const leftArmPhase = Math.sin(walkPhase.current + Math.PI) * armSwingAmount.current;
+        const rightArmPhase = Math.sin(walkPhase.current) * armSwingAmount.current;
+        
+        // Enhanced head bobbing with speed variation
+        const headBob = Math.sin(walkPhase.current * 2) * headBobAmount.current * normalizedSpeed;
+        character.position.y = headBob;
+        
+        // Dynamic body lean based on movement type and speed
+        const baseLean = Math.sin(walkPhase.current) * 0.03 * normalizedSpeed;
+        character.rotation.z = baseLean + bodyLeanDirection;
+        
+        // Apply enhanced limb animations
         character.traverse((child) => {
           if (child.type === 'Bone' || child.type === 'Object3D' || child.name.includes('Bone')) {
-            // Left leg animation
-            if (child.name.toLowerCase().includes('left') && 
-                (child.name.toLowerCase().includes('leg') || child.name.toLowerCase().includes('thigh') || child.name.toLowerCase().includes('foot'))) {
+            const limbName = child.name.toLowerCase();
+            
+            // Enhanced left leg animation
+            if (limbName.includes('left') && (limbName.includes('leg') || limbName.includes('thigh') || limbName.includes('foot'))) {
               child.rotation.x = leftLegPhase * 0.8;
-              child.position.z = Math.sin(leftLegPhase) * 0.1;
+              child.position.z = Math.sin(leftLegPhase) * 0.1 * normalizedSpeed;
+              if (animationState === 'strafe_left') {
+                child.rotation.y = Math.sin(walkPhase.current) * 0.3;
+              }
             }
-            // Right leg animation  
-            if (child.name.toLowerCase().includes('right') && 
-                (child.name.toLowerCase().includes('leg') || child.name.toLowerCase().includes('thigh') || child.name.toLowerCase().includes('foot'))) {
+            
+            // Enhanced right leg animation
+            if (limbName.includes('right') && (limbName.includes('leg') || limbName.includes('thigh') || limbName.includes('foot'))) {
               child.rotation.x = rightLegPhase * 0.8;
-              child.position.z = Math.sin(rightLegPhase) * 0.1;
+              child.position.z = Math.sin(rightLegPhase) * 0.1 * normalizedSpeed;
+              if (animationState === 'strafe_right') {
+                child.rotation.y = Math.sin(walkPhase.current) * -0.3;
+              }
             }
-            // Left arm animation
-            if (child.name.toLowerCase().includes('left') && 
-                (child.name.toLowerCase().includes('arm') || child.name.toLowerCase().includes('shoulder') || child.name.toLowerCase().includes('hand'))) {
-              child.rotation.x = leftArmPhase * armSwingAmount.current;
+            
+            // Enhanced arm animations with state variations
+            if (limbName.includes('left') && (limbName.includes('arm') || limbName.includes('shoulder') || limbName.includes('hand'))) {
+              child.rotation.x = leftArmPhase * (isDashing.current ? 1.5 : 1.0);
+              if (animationState === 'dashing') {
+                child.rotation.z = Math.sin(walkPhase.current * 1.5) * 0.2;
+              }
             }
-            // Right arm animation
-            if (child.name.toLowerCase().includes('right') && 
-                (child.name.toLowerCase().includes('arm') || child.name.toLowerCase().includes('shoulder') || child.name.toLowerCase().includes('hand'))) {
-              child.rotation.x = rightArmPhase * armSwingAmount.current;
+            
+            if (limbName.includes('right') && (limbName.includes('arm') || limbName.includes('shoulder') || limbName.includes('hand'))) {
+              child.rotation.x = rightArmPhase * (isDashing.current ? 1.5 : 1.0);
+              if (animationState === 'dashing') {
+                child.rotation.z = Math.sin(walkPhase.current * 1.5) * -0.2;
+              }
             }
           }
         });
         
-        console.log(`Procedural animation: ${animationState}, walkPhase: ${walkPhase.current.toFixed(2)}, Sprint: ${controls.sprint}`);
-      }
-    } else if (gltf.animations.length === 0) {
-      // Smoothly return to idle pose for procedural animations
-      if (playerRef.current?.children[0]) {
-        const character = playerRef.current.children[0];
+        console.log(`Enhanced Animation: ${animationState}, Speed: ${normalizedSpeed.toFixed(2)}, Phase: ${walkPhase.current.toFixed(2)}`);
+      } else {
+        // Enhanced idle state with subtle animations
+        const breatheIntensity = 0.02;
+        const fidgetIntensity = 0.01;
+        
+        // Breathing animation
+        const breathe = Math.sin(state.clock.elapsedTime * 1.5) * breatheIntensity;
+        character.scale.y = 1 + breathe;
+        
+        // Subtle fidget movements
+        const fidget = Math.sin(state.clock.elapsedTime * 0.8) * fidgetIntensity;
+        character.rotation.z = fidget;
+        
+        // Smoothly return to neutral pose
         character.position.y = THREE.MathUtils.lerp(character.position.y, 0, delta * 5);
-        character.rotation.z = THREE.MathUtils.lerp(character.rotation.z, 0, delta * 5);
         character.rotation.x = THREE.MathUtils.lerp(character.rotation.x, 0, delta * 5);
       }
     }
 
-    // Jumping animation
+    // Enhanced jumping animation with better physics
     if (animationState === 'jumping') {
-      jumpAnimation.current += delta * 5;
-      if (playerRef.current?.children[0]) {
-        const jumpStretch = Math.sin(jumpAnimation.current) * 0.1;
-        playerRef.current.children[0].scale.y = 1 + jumpStretch;
-        playerRef.current.children[0].scale.x = 1 - jumpStretch * 0.3;
-        playerRef.current.children[0].scale.z = 1 - jumpStretch * 0.3;
+      jumpAnimation.current += delta * 8;
+      const character = playerRef.current?.children[0];
+      if (character) {
+        // More dynamic jump animation with rotation
+        const jumpProgress = jumpAnimation.current / Math.PI;
+        const jumpStretch = Math.sin(jumpAnimation.current) * 0.15;
+        const jumpRotation = Math.sin(jumpAnimation.current * 0.5) * 0.1;
+        
+        character.scale.y = 1 + jumpStretch;
+        character.scale.x = 1 - jumpStretch * 0.2;
+        character.scale.z = 1 - jumpStretch * 0.2;
+        character.rotation.x += jumpRotation * delta;
+        
+        // Add slight forward momentum during jump
+        if (isMoving) {
+          character.rotation.x = THREE.MathUtils.lerp(character.rotation.x, -0.2, delta * 3);
+        }
       }
       
-      // Reset jump animation when landing
+      // Enhanced landing detection and transition
       if (isOnGround.current && jumpAnimation.current > Math.PI) {
-        setAnimationState(isMoving ? 'walking' : 'idle');
+        const nextState = isMoving ? (controls.sprint ? 'running' : 'walking') : 'idle';
+        setAnimationState(nextState);
         if (playerRef.current?.children[0]) {
           playerRef.current.children[0].scale.set(1, 1, 1);
         }
+        playHit(); // Landing sound
       }
     }
 
-    // Breathing animation for idle state
-    if (animationState === 'idle' && isOnGround.current) {
-      const breathe = Math.sin(state.clock.elapsedTime * 1.5) * 0.02;
-      if (playerRef.current?.children[0]) {
-        playerRef.current.children[0].scale.y = 1 + breathe;
-      }
+    // Enhanced boundary system with momentum preservation
+    const boundarySize = 45;
+    if (Math.abs(player.position.x) > boundarySize) {
+      player.position.x = Math.sign(player.position.x) * boundarySize;
+      momentum.current.x *= -0.3; // Soft bounce effect
+    }
+    if (Math.abs(player.position.z) > boundarySize) {
+      player.position.z = Math.sign(player.position.z) * boundarySize;
+      momentum.current.z *= -0.3; // Soft bounce effect
     }
 
-    // Keep player within bounds
-    player.position.x = Math.max(-50, Math.min(50, player.position.x));
-    player.position.z = Math.max(-50, Math.min(50, player.position.z));
-
-    // Update camera to follow player
-    state.camera.position.x = player.position.x;
-    state.camera.position.z = player.position.z + 12;
-    state.camera.lookAt(player.position);
+    // Update cooldowns
+    if (dashCooldown.current > 0) {
+      dashCooldown.current -= delta;
+    }
+    
+    // Enhanced dynamic camera system
+    const currentSpeed = momentum.current.length();
+    speedBasedAnimationMultiplier.current = Math.max(0.5, currentSpeed / baseSpeed);
+    
+    // Adjust camera distance based on movement speed and state
+    if (isDashing.current) {
+      targetCameraOffset.current.set(0, 10, 15); // Pull back during dash
+    } else if (controls.sprint) {
+      targetCameraOffset.current.set(0, 9, 14); // Slightly back during run
+    } else {
+      targetCameraOffset.current.set(0, 8, 12); // Normal distance
+    }
+    
+    // Smooth camera offset interpolation
+    cameraOffset.current.lerp(targetCameraOffset.current, 5 * delta);
+    
+    // Camera look-ahead based on movement direction
+    if (isMoving) {
+      cameraLookAhead.current.lerp(
+        momentum.current.clone().normalize().multiplyScalar(3),
+        3 * delta
+      );
+    } else {
+      cameraLookAhead.current.lerp(new THREE.Vector3(0, 0, 0), 2 * delta);
+    }
+    
+    // Apply enhanced camera positioning
+    const cameraTarget = player.position.clone().add(cameraLookAhead.current);
+    state.camera.position.x = player.position.x + cameraOffset.current.x;
+    state.camera.position.y = player.position.y + cameraOffset.current.y;
+    state.camera.position.z = player.position.z + cameraOffset.current.z;
+    state.camera.lookAt(cameraTarget);
   });
 
   return (

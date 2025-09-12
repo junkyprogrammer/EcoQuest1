@@ -10,7 +10,7 @@ import SoundManager from "./components/SoundManager";
 import Fallback2DGame from "./components/Fallback2DGame";
 import { useGameState } from "./lib/stores/useGameState";
 
-// Define control keys for the game
+// Enhanced control keys for dynamic movement
 export enum Controls {
   forward = 'forward',
   backward = 'backward',
@@ -18,7 +18,12 @@ export enum Controls {
   rightward = 'rightward',
   interact = 'interact',
   jump = 'jump',
-  sprint = 'sprint'
+  sprint = 'sprint',
+  dash = 'dash',
+  walk = 'walk',
+  strafe_left = 'strafe_left',
+  strafe_right = 'strafe_right',
+  precision_mode = 'precision_mode'
 }
 
 const controls = [
@@ -26,9 +31,14 @@ const controls = [
   { name: Controls.backward, keys: ["KeyS", "ArrowDown"] },
   { name: Controls.leftward, keys: ["KeyA", "ArrowLeft"] },
   { name: Controls.rightward, keys: ["KeyD", "ArrowRight"] },
-  { name: Controls.interact, keys: ["KeyE"] },
+  { name: Controls.interact, keys: ["KeyE", "KeyF"] },
   { name: Controls.jump, keys: ["KeyJ", "Space"] },
   { name: Controls.sprint, keys: ["ShiftLeft", "ShiftRight"] },
+  { name: Controls.dash, keys: ["KeyX", "KeyZ"] },
+  { name: Controls.walk, keys: ["ControlLeft", "ControlRight"] },
+  { name: Controls.strafe_left, keys: ["KeyQ"] },
+  { name: Controls.strafe_right, keys: ["KeyR"] },
+  { name: Controls.precision_mode, keys: ["AltLeft", "AltRight"] },
 ];
 
 const queryClient = new QueryClient();
