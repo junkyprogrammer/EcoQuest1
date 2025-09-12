@@ -26,17 +26,21 @@ export default function Player() {
   const { isPaused } = useGameState();
   const { playHit } = useAudio();
   
-  // Simple movement state
-  const velocity = useRef(new THREE.Vector3());
+  // Enhanced movement state
   const [isMoving, setIsMoving] = useState(false);
   const [animationState, setAnimationState] = useState<'idle' | 'walking' | 'running' | 'jumping'>('idle');
+  const currentRotation = useRef(0);
+  const targetRotation = useRef(0);
+  const jumpAnimationTime = useRef(0);
+  const runningEffectTime = useRef(0);
+  const [isJumping, setIsJumping] = useState(false);
   
-  // Movement constants - simple and clear
+  // Enhanced movement constants
   const moveSpeed = 8;
   const runSpeed = 12;
-  const jumpForce = 12;
-  const gravity = 25;
-  const isOnGround = useRef(true);
+  const rotationSpeed = 8; // Speed of character rotation
+  const jumpAnimationDuration = 0.6; // Duration of jump animation
+  const runningEffectIntensity = 1.2; // Running visual effect intensity
   
   // Character positioning - position character well above ground level for maximum visibility
   const characterScale = 2.5; // Increased scale for better visibility
@@ -122,57 +126,123 @@ export default function Player() {
       console.log('🎮 D - Moving RIGHT');
     }
     
-    // Jump input
-    if (controls.jump && isOnGround.current) {
-      velocity.current.y = jumpForce;
-      isOnGround.current = false;
+    // Enhanced jump input - Visual effects only, NO Y position changes
+    if (controls.jump && !isJumping) {
+      setIsJumping(true);
+      jumpAnimationTime.current = 0;
       setAnimationState('jumping');
       playHit();
-      console.log('🎮 SPACE - JUMPING!');
+      console.log('🎮 SPACE - JUMPING! (Visual effects only - Y stays at 4.0)');
     }
     
     // Normalize input for consistent movement speed
     if (inputVector.length() > 0) {
       inputVector.normalize();
+      
+      // ENHANCED DIRECTIONAL ROTATION - Calculate target rotation based on movement direction
+      targetRotation.current = Math.atan2(inputVector.x, inputVector.z);
+      console.log(`🧭 Movement direction: ${(targetRotation.current * 180 / Math.PI).toFixed(1)}°`);
     }
     
     // Calculate movement speed
     const currentSpeed = controls.sprint ? runSpeed : moveSpeed;
     const speedMode = controls.sprint ? 'RUNNING' : 'WALKING';
     
-    // Apply horizontal movement
+    // Apply horizontal movement with enhanced effects
     if (playerIsMoving) {
       const movement = inputVector.clone().multiplyScalar(currentSpeed * delta);
-      const oldPosition = player.position.clone();
-      player.position.add(movement);
       
-      // Log movement with clear position tracking
-      console.log(`🏃 ${speedMode}: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s`);
+      // Apply movement but keep Y locked at 4.0
+      const newX = player.position.x + movement.x;
+      const newZ = player.position.z + movement.z;
+      player.position.set(newX, 4.0, newZ); // CRITICAL: Y always stays at 4.0
       
-      // Update animation state
-      setAnimationState(controls.sprint ? 'running' : 'walking');
+      // Enhanced running effects
+      if (controls.sprint) {
+        runningEffectTime.current += delta * 10;
+        console.log(`🏃‍♂️ ENHANCED RUNNING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s - Running effects active!`);
+      } else {
+        console.log(`🚶 WALKING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s`);
+      }
+      
+      // Update animation state (only if not jumping)
+      if (!isJumping) {
+        setAnimationState(controls.sprint ? 'running' : 'walking');
+      }
       setIsMoving(true);
     } else {
-      setAnimationState('idle');
+      // Only change to idle if not jumping
+      if (!isJumping) {
+        setAnimationState('idle');
+      }
       setIsMoving(false);
+      runningEffectTime.current = 0;
     }
     
-    // Apply gravity
-    velocity.current.y -= gravity * delta;
-    player.position.y += velocity.current.y * delta;
+    // ENHANCED ROTATION SYSTEM - Smooth character rotation to face movement direction
+    if (inputVector.length() > 0) {
+      // Smooth rotation interpolation
+      const rotationDifference = targetRotation.current - currentRotation.current;
+      
+      // Handle rotation wrapping around 360 degrees
+      let adjustedDifference = rotationDifference;
+      if (adjustedDifference > Math.PI) adjustedDifference -= 2 * Math.PI;
+      if (adjustedDifference < -Math.PI) adjustedDifference += 2 * Math.PI;
+      
+      currentRotation.current += adjustedDifference * rotationSpeed * delta;
+      player.rotation.y = currentRotation.current;
+      
+      console.log(`🔄 Character rotation: ${(currentRotation.current * 180 / Math.PI).toFixed(1)}° (facing movement direction)`);
+    }
     
-    // Ground collision - keep character above ground level
-    if (player.position.y <= groundLevel) {
-      player.position.y = groundLevel;
-      velocity.current.y = 0;
-      isOnGround.current = true;
+    // ENHANCED JUMPING VISUAL EFFECTS - NO Y position changes, purely visual
+    if (isJumping) {
+      jumpAnimationTime.current += delta;
       
-      console.log(`🏃 Character elevated at Y: ${groundLevel.toFixed(2)} (significantly above terrain surface for optimal visibility)`);
+      // Bounce effect using scale and rotation (no Y position change)
+      const jumpProgress = jumpAnimationTime.current / jumpAnimationDuration;
+      const bounceEffect = Math.sin(jumpProgress * Math.PI) * 0.3;
       
-      // Return to idle/walking when landing
-      if (animationState === 'jumping') {
-        setAnimationState(playerIsMoving ? 'walking' : 'idle');
+      // Apply visual jump effects
+      const jumpScale = characterScale + bounceEffect;
+      const jumpRotationX = Math.sin(jumpProgress * Math.PI * 4) * 0.1;
+      
+      model.scale.setScalar(jumpScale);
+      model.rotation.x = jumpRotationX;
+      
+      console.log(`🦘 JUMP ANIMATION: Progress: ${(jumpProgress * 100).toFixed(1)}%, Scale: ${jumpScale.toFixed(2)}, Y stays at 4.0!`);
+      
+      // End jump animation
+      if (jumpAnimationTime.current >= jumpAnimationDuration) {
+        setIsJumping(false);
+        jumpAnimationTime.current = 0;
+        model.scale.setScalar(characterScale);
+        model.rotation.x = 0;
+        setAnimationState(playerIsMoving ? (controls.sprint ? 'running' : 'walking') : 'idle');
+        console.log('🎯 Jump animation complete - returned to normal state');
       }
+    }
+    
+    // ENHANCED RUNNING VISUAL EFFECTS
+    if (controls.sprint && playerIsMoving && !isJumping) {
+      // Add running bob effect
+      const bobEffect = Math.sin(runningEffectTime.current) * 0.1;
+      const runScale = characterScale + Math.abs(bobEffect) * 0.1;
+      
+      model.scale.setScalar(runScale);
+      model.rotation.z = bobEffect * 0.05;
+      
+      console.log(`💨 RUNNING EFFECTS: Bob: ${bobEffect.toFixed(2)}, Scale: ${runScale.toFixed(2)}, Enhanced running active!`);
+    } else if (!isJumping) {
+      // Reset to normal scale when not running or jumping
+      model.scale.setScalar(characterScale);
+      model.rotation.z = 0;
+    }
+    
+    // CRITICAL: Always ensure Y position stays at 4.0
+    if (player.position.y !== 4.0) {
+      player.position.y = 4.0;
+      console.log('🔒 Y POSITION LOCKED: Corrected to 4.0 (as required)');
     }
     
     // Terrain-based movement boundaries - keep character within the 100x100 ground area
