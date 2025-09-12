@@ -175,16 +175,8 @@ export default function Player() {
       }
     }
     
-    // Simple boundary system to keep character visible
-    const boundary = 15;
-    if (Math.abs(player.position.x) > boundary) {
-      player.position.x = Math.sign(player.position.x) * boundary;
-      console.log(`🚧 Hit X boundary at ${player.position.x}`);
-    }
-    if (Math.abs(player.position.z) > boundary) {
-      player.position.z = Math.sign(player.position.z) * boundary;
-      console.log(`🚧 Hit Z boundary at ${player.position.z}`);
-    }
+    // Movement boundaries removed - character can now access all areas without limitations
+    console.log(`🌍 Free movement enabled - position: (${player.position.x.toFixed(2)}, ${player.position.z.toFixed(2)})`);
     
     // Camera follows player smoothly
     const camera = state.camera;
