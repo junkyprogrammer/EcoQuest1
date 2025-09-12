@@ -8,50 +8,25 @@ import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
 export default function Player() {
-  // ACCURATE POSITIONING: Enhanced Nathan character loading with precise centering
-  const fbx = useFBX('/models/nathan_character.fbx');
+  // Load reliable GLB character model
+  const { scene: characterModel, animations } = useGLTF('/models/player_character.glb');
   const model = useMemo(() => {
-    const clonedModel = SkeletonUtils.clone(fbx);
+    const clonedModel = characterModel.clone();
     
-    // STEP 1: Calculate precise bounding box for accurate positioning
-    const bbox = new THREE.Box3().setFromObject(clonedModel);
-    const center = new THREE.Vector3();
-    const size = new THREE.Vector3();
-    bbox.getCenter(center);
-    bbox.getSize(size);
-    const min = bbox.min.clone();
-    const max = bbox.max.clone();
+    // Simple positioning: center on ground
+    clonedModel.position.set(0, 0, 0);
+    clonedModel.rotation.y = 0; // Face forward
+    clonedModel.scale.setScalar(1); // Normal scale
     
-    console.log('=== ACCURATE POSITIONING: NEW NATHAN CHARACTER ===');
-    console.log('Original mesh center:', center.toArray());
-    console.log('Original mesh size:', size.toArray());
-    console.log('Original bbox min/max:', min.toArray(), '/', max.toArray());
-    
-    // STEP 2: Perfect centering - eliminate ALL internal mesh offsets
-    const preciseOffset = new THREE.Vector3(-center.x, -min.y, -center.z);
-    clonedModel.position.copy(preciseOffset);
-    
-    // STEP 3: Ensure proper forward direction for camera viewing
-    // Character should face negative Z direction (away from camera at [0,8,12])
-    clonedModel.rotation.y = 0; // Standard forward orientation
-    
-    // STEP 4: Validation of centering accuracy
-    const finalBbox = new THREE.Box3().setFromObject(clonedModel);
-    const finalCenter = new THREE.Vector3();
-    finalBbox.getCenter(finalCenter);
-    
-    console.log('🎯 POSITIONING RESULTS:');
-    console.log('  - Offset applied:', preciseOffset.toArray());
-    console.log('  - Final mesh center:', finalCenter.toArray());
-    console.log('  - Character ready for (0,0,0) world placement');
-    console.log('  - Camera at [0,8,12] will view character perfectly centered');
-    console.log('=== NEW NATHAN CHARACTER LOADED SUCCESSFULLY ===');
+    console.log('✅ Character loaded: player_character.glb');
+    console.log('Model positioned at origin for reliable visibility');
     
     return clonedModel;
-  }, [fbx]);
+  }, [characterModel]);
+  
   const playerRef = useRef<THREE.Group>(null);
   const modelRef = useRef<THREE.Object3D>(null);
-  const { actions, mixer, clips } = useAnimations(fbx.animations, modelRef);
+  const { actions, mixer, clips } = useAnimations(animations, modelRef);
   const [subscribe, get] = useKeyboardControls<Controls>();
   const { addScore, isPaused } = useGameState();
   const { playHit } = useAudio();
@@ -118,129 +93,30 @@ export default function Player() {
     return unsubscribe;
   }, [subscribe]);
 
-  // Initialize animations and setup skeletal animation system with comprehensive debugging
+  // Initialize animations 
   useEffect(() => {
-    console.log('=== NATHAN CHARACTER DEBUG START ===');
-    console.log('Model loading complete. Checking for skeletal structure...');
+    console.log('🎮 Character Setup: Loading animations...');
     
-    // Debug: Check FBX and model properties
-    console.log('FBX object:', fbx);
-    console.log('Cloned model:', model);
-    console.log('FBX animations count:', fbx.animations.length);
-    console.log('FBX children count:', fbx.children.length);
-    console.log('Model children count:', model.children.length);
-    
-    // Debug: Check if model has skeleton
-    let hasSkinnedMesh = false;
-    let boneCount = 0;
-    let meshCount = 0;
-    let geometryCount = 0;
-    let materialCount = 0;
-    let visibleMeshes = 0;
-    
-    model.traverse((child) => {
-      console.log(`Child: ${child.name} | Type: ${child.type} | Visible: ${child.visible}`);
+    if (animations.length > 0) {
+      console.log('Available animations:', animations.map(anim => anim.name));
       
-      if ((child as any).isSkinnedMesh) {
-        hasSkinnedMesh = true;
-        meshCount++;
-        if (child.visible) visibleMeshes++;
-        console.log(`  - SkinnedMesh: ${child.name}, Visible: ${child.visible}`);
-        
-        if ((child as any).skeleton) {
-          boneCount = (child as any).skeleton.bones.length;
-          console.log(`  - Skeleton bones: ${boneCount}`);
-        }
-        
-        if ((child as any).material) {
-          materialCount++;
-          const material = (child as any).material;
-          console.log(`  - Material: ${material.name || 'unnamed'}, Type: ${material.type}`);
-          console.log(`  - Material visible: ${material.visible !== false}`);
-          console.log(`  - Material opacity: ${material.opacity || 1}`);
-          console.log(`  - Material transparent: ${material.transparent}`);
-        }
-        
-        if ((child as any).geometry) {
-          geometryCount++;
-          const geometry = (child as any).geometry;
-          console.log(`  - Geometry: vertices=${geometry.attributes?.position?.count || 0}`);
-        }
-      } else if ((child as any).isMesh) {
-        meshCount++;
-        if (child.visible) visibleMeshes++;
-        console.log(`  - Mesh: ${child.name}, Visible: ${child.visible}`);
-        
-        if ((child as any).material) {
-          materialCount++;
-          const material = (child as any).material;
-          console.log(`  - Material: ${material.name || 'unnamed'}, Type: ${material.type}`);
-          console.log(`  - Material visible: ${material.visible !== false}`);
-          console.log(`  - Material opacity: ${material.opacity || 1}`);
-        }
-      }
-      
-      // Log position and scale
-      if (child.position) {
-        console.log(`  - Position: (${child.position.x.toFixed(2)}, ${child.position.y.toFixed(2)}, ${child.position.z.toFixed(2)})`);
-      }
-      if (child.scale) {
-        console.log(`  - Scale: (${child.scale.x.toFixed(2)}, ${child.scale.y.toFixed(2)}, ${child.scale.z.toFixed(2)})`);
-      }
-    });
-    
-    console.log(`=== MESH SUMMARY ===`);
-    console.log(`- SkinnedMesh: ${hasSkinnedMesh}`);
-    console.log(`- Bone count: ${boneCount}`);
-    console.log(`- Total meshes: ${meshCount}`);
-    console.log(`- Visible meshes: ${visibleMeshes}`);
-    console.log(`- Geometries: ${geometryCount}`);
-    console.log(`- Materials: ${materialCount}`);
-    
-    // Debug: Model transform
-    console.log(`=== MODEL TRANSFORM ===`);
-    console.log(`- Model position: (${model.position.x}, ${model.position.y}, ${model.position.z})`);
-    console.log(`- Model scale: (${model.scale.x}, ${model.scale.y}, ${model.scale.z})`);
-    console.log(`- Model visible: ${model.visible}`);
-    
-    if (fbx.animations.length > 0) {
-      console.log('Available animations:', fbx.animations.map(anim => anim.name));
-      
-      // Find appropriate animations
+      // Find and start idle animation
       const idleClip = clips.find(clip => /idle|stand/i.test(clip.name));
-      const walkClip = clips.find(clip => /walk/i.test(clip.name));
-      const runClip = clips.find(clip => /run|sprint/i.test(clip.name));
+      const defaultAction = actions[idleClip?.name || ''] || Object.values(actions)[0];
       
-      console.log('Animation mapping:', { 
-        idle: idleClip?.name, 
-        walk: walkClip?.name, 
-        run: runClip?.name 
-      });
-      
-      // Start with idle animation
-      const idleAction = actions[idleClip?.name || ''] || actions.idle || Object.values(actions)[0];
-      if (idleAction) {
-        idleAction.play();
-        currentActionRef.current = idleClip?.name || 'idle';
-        console.log('Started skeletal animation:', currentActionRef.current);
+      if (defaultAction) {
+        defaultAction.play();
+        currentActionRef.current = idleClip?.name || 'default';
+        console.log('✅ Started animation:', currentActionRef.current);
       }
     } else {
-      console.log('No animations found - using procedural fallback');
+      console.log('ℹ️ No skeletal animations - using procedural animation');
     }
-    
-    // Final warning if no visible meshes
-    if (visibleMeshes === 0) {
-      console.warn('🚨 NO VISIBLE MESHES FOUND! This explains why character is invisible.');
-    } else {
-      console.log(`✅ Found ${visibleMeshes} visible meshes - character should be visible`);
-    }
-    
-    console.log('=== NATHAN CHARACTER DEBUG END ===');
-  }, [fbx.animations, actions, clips, model]);
+  }, [animations, actions, clips]);
 
   // Handle animation state changes with cross-fading
   useEffect(() => {
-    if (!mixer || fbx.animations.length === 0) return;
+    if (!mixer || animations.length === 0) return;
 
     // Map animation states to actual clip names
     const idleClip = clips.find(clip => /idle|stand/i.test(clip.name));
@@ -263,7 +139,7 @@ export default function Player() {
         currentActionRef.current = nextActionName;
       }
     }
-  }, [animationState, actions, mixer, fbx.animations, clips]);
+  }, [animationState, actions, mixer, animations, clips]);
 
   // Fixed dash mechanics - only on key events, not every frame
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
@@ -550,7 +426,7 @@ export default function Player() {
     }
 
     // Enhanced procedural animation system for all movement states
-    if (fbx.animations.length === 0) {
+    if (animations.length === 0) {
       const character = playerRef.current?.children[0];
       if (!character) return;
       
@@ -793,7 +669,7 @@ export default function Player() {
     if (playerRef.current) {
       // Set exact center screen position for optimal camera view
       playerRef.current.position.set(0, 0, 0);
-      console.log('🎯 ACCURATE POSITIONING: Nathan character initialized at center screen (0,0,0)');
+      console.log('🎯 Character initialized at center screen (0,0,0)');
       console.log('📷 Camera view: [0,8,12] looking at character at [0,0,0] - perfectly centered');
       
       // Validate position accuracy
