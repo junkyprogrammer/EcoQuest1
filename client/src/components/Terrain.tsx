@@ -10,10 +10,23 @@ export default function Terrain() {
 
   return (
     <group>
-      {/* Main ground plane */}
+      {/* Main ground plane with vibrant stylized grass */}
       <mesh position={[0, 0, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[100, 100]} />
-        <meshLambertMaterial map={grassTexture} />
+        <meshLambertMaterial 
+          map={grassTexture} 
+          color="#32CD32"  // Vibrant lime green tint
+        />
+      </mesh>
+      
+      {/* Add subtle grass pattern overlay for Free Fire style */}
+      <mesh position={[0, 0.005, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[98, 98]} />
+        <meshBasicMaterial 
+          color="#7CFC00" 
+          transparent 
+          opacity={0.15}
+        />
       </mesh>
       
       {/* Path using asphalt texture */}

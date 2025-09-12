@@ -138,37 +138,80 @@ export default function ForestEcosystem({ isTransitioning }: ForestEcosystemProp
     
     return (
       <group key={`tree-${index}`} position={position} scale={scale} userData={{ type: 'tree' }}>
-        {/* Tree trunk - varies by tree type */}
+        {/* Stylized tree trunk with vibrant colors */}
         <mesh position={[0, 2, 0]} castShadow receiveShadow>
           <cylinderGeometry args={[
-            type === 'birch' ? 0.2 : type === 'pine' ? 0.25 : 0.35,
-            type === 'birch' ? 0.3 : type === 'pine' ? 0.35 : 0.45,
+            type === 'birch' ? 0.25 : type === 'pine' ? 0.3 : 0.4,
+            type === 'birch' ? 0.35 : type === 'pine' ? 0.4 : 0.5,
             type === 'pine' ? 5 : 4,
             8
           ]} />
           <meshLambertMaterial 
-            map={woodTexture}
-            color={type === 'birch' ? '#F5F5DC' : type === 'pine' ? '#8B4513' : '#A0522D'}
+            color={type === 'birch' ? '#DEB887' : type === 'pine' ? '#8B4513' : '#A0522D'}
           />
         </mesh>
         
-        {/* Tree foliage - different shapes for different tree types */}
+        {/* Stylized foliage with bright, vibrant colors */}
         {type === 'pine' ? (
-          // Cone shape for pine trees
-          <mesh position={[0, 5.5, 0]} castShadow>
-            <coneGeometry args={[2.5, 4, 8]} />
-            <meshLambertMaterial color="#0F4F0F" />
-          </mesh>
+          // Stylized cone for pine trees with multiple layers
+          <>
+            <mesh position={[0, 5.5, 0]} castShadow>
+              <coneGeometry args={[2.5, 4, 8]} />
+              <meshLambertMaterial color="#32CD32" />
+            </mesh>
+            <mesh position={[0, 6.5, 0]} castShadow>
+              <coneGeometry args={[2, 3, 8]} />
+              <meshLambertMaterial color="#7CFC00" />
+            </mesh>
+            <mesh position={[0, 7.2, 0]} castShadow>
+              <coneGeometry args={[1.5, 2, 8]} />
+              <meshLambertMaterial color="#00FF00" />
+            </mesh>
+          </>
         ) : (
-          // Sphere shape for oak and birch
-          <mesh position={[0, type === 'birch' ? 4.5 : 5, 0]} castShadow>
-            <sphereGeometry args={[
-              type === 'birch' ? 1.8 : 2.2,
-              8, 6
-            ]} />
-            <meshLambertMaterial color={type === 'birch' ? '#90EE90' : '#228B22'} />
-          </mesh>
+          // Layered spherical foliage for oak and birch
+          <>
+            {/* Main foliage layer */}
+            <mesh position={[0, type === 'birch' ? 4.5 : 5, 0]} castShadow>
+              <sphereGeometry args={[
+                type === 'birch' ? 1.8 : 2.2,
+                12, 8
+              ]} />
+              <meshLambertMaterial color={type === 'birch' ? '#7CFC00' : '#32CD32'} />
+            </mesh>
+            
+            {/* Secondary foliage layer for depth */}
+            <mesh position={[0, type === 'birch' ? 5.2 : 5.8, 0]} castShadow>
+              <sphereGeometry args={[
+                type === 'birch' ? 1.4 : 1.8,
+                12, 8
+              ]} />
+              <meshLambertMaterial color={type === 'birch' ? '#00FF00' : '#228B22'} />
+            </mesh>
+            
+            {/* Top highlight for cartoon effect */}
+            <mesh position={[0, type === 'birch' ? 5.8 : 6.5, 0]} castShadow>
+              <sphereGeometry args={[
+                type === 'birch' ? 1 : 1.2,
+                12, 8
+              ]} />
+              <meshLambertMaterial color="#ADFF2F" />
+            </mesh>
+          </>
         )}
+        
+        {/* Stylized glow effect for Free Fire aesthetic */}
+        <mesh position={[0, type === 'pine' ? 6 : 5, 0]}>
+          <sphereGeometry args={[
+            type === 'pine' ? 3 : (type === 'birch' ? 2.2 : 2.6),
+            16, 12
+          ]} />
+          <meshBasicMaterial 
+            color="#90EE90" 
+            transparent 
+            opacity={0.08}
+          />
+        </mesh>
       </group>
     );
   };
@@ -367,10 +410,23 @@ export default function ForestEcosystem({ isTransitioning }: ForestEcosystemProp
 
   return (
     <group ref={groupRef}>
-      {/* Forest floor */}
+      {/* Stylized forest floor with vibrant grass */}
       <mesh position={[0, 0, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[100, 100]} />
-        <meshLambertMaterial map={grassTexture} />
+        <meshLambertMaterial 
+          map={grassTexture} 
+          color="#228B22"  // Forest green tint for variety
+        />
+      </mesh>
+      
+      {/* Add forest-style overlay for depth */}
+      <mesh position={[0, 0.003, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[95, 95]} />
+        <meshBasicMaterial 
+          color="#32CD32" 
+          transparent 
+          opacity={0.12}
+        />
       </mesh>
 
       {/* Forest paths */}

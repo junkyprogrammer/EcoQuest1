@@ -279,12 +279,12 @@ export default function CityEcosystem({ isTransitioning }: CityEcosystemProps) {
               <meshLambertMaterial color={vehicleColor} />
             </mesh>
             {/* Wheels */}
-            <mesh position={[-0.4, -0.2, 0]} castShadow>
-              <cylinderGeometry args={[0.3, 0.3, 0.1]} rotation={[Math.PI / 2, 0, 0]} />
+            <mesh position={[-0.4, -0.2, 0]} castShadow rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.3, 0.3, 0.1]} />
               <meshLambertMaterial color="#2F4F4F" />
             </mesh>
-            <mesh position={[0.4, -0.2, 0]} castShadow>
-              <cylinderGeometry args={[0.3, 0.3, 0.1]} rotation={[Math.PI / 2, 0, 0]} />
+            <mesh position={[0.4, -0.2, 0]} castShadow rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.3, 0.3, 0.1]} />
               <meshLambertMaterial color="#2F4F4F" />
             </mesh>
           </>
@@ -302,8 +302,8 @@ export default function CityEcosystem({ isTransitioning }: CityEcosystemProps) {
             </mesh>
             {/* Wheels */}
             {[-0.7, 0.7].map((x, i) => (
-              <mesh key={i} position={[x, -0.5, 0.6]} castShadow>
-                <cylinderGeometry args={[0.25, 0.25, 0.2]} rotation={[Math.PI / 2, 0, 0]} />
+              <mesh key={i} position={[x, -0.5, 0.6]} castShadow rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.25, 0.25, 0.2]} />
                 <meshLambertMaterial color="#2F4F4F" />
               </mesh>
             ))}
@@ -500,12 +500,24 @@ export default function CityEcosystem({ isTransitioning }: CityEcosystemProps) {
       >
         {type === 'park' && (
           <>
-            {/* Park grass area */}
+            {/* Stylized park grass area with vibrant colors */}
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[size, size]} />
-              <meshLambertMaterial map={grassTexture} />
+              <meshLambertMaterial 
+                map={grassTexture} 
+                color="#32CD32"  // Vibrant lime green tint
+              />
             </mesh>
-            {/* Park trees */}
+            {/* Subtle overlay for Free Fire style */}
+            <mesh position={[0, 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[size * 0.9, size * 0.9]} />
+              <meshBasicMaterial 
+                color="#7CFC00" 
+                transparent 
+                opacity={0.1}
+              />
+            </mesh>
+            {/* Stylized Park trees with Free Fire aesthetic */}
             {Array.from({ length: Math.floor(size / 2) }).map((_, i) => (
               <group 
                 key={i}
@@ -515,13 +527,34 @@ export default function CityEcosystem({ isTransitioning }: CityEcosystemProps) {
                   (Math.random() - 0.5) * size * 0.8
                 ]}
               >
+                {/* Modern tree trunk */}
                 <mesh position={[0, 2, 0]} castShadow>
-                  <cylinderGeometry args={[0.2, 0.3, 4]} />
-                  <meshLambertMaterial color="#8B4513" />
+                  <cylinderGeometry args={[0.25, 0.35, 4, 8]} />
+                  <meshLambertMaterial color="#A0522D" />
                 </mesh>
+                
+                {/* Layered vibrant foliage */}
                 <mesh position={[0, 4.5, 0]} castShadow>
-                  <sphereGeometry args={[1.5, 8, 6]} />
-                  <meshLambertMaterial color="#228B22" />
+                  <sphereGeometry args={[1.8, 12, 8]} />
+                  <meshLambertMaterial color="#32CD32" />
+                </mesh>
+                <mesh position={[0, 5.2, 0]} castShadow>
+                  <sphereGeometry args={[1.4, 12, 8]} />
+                  <meshLambertMaterial color="#7CFC00" />
+                </mesh>
+                <mesh position={[0, 5.8, 0]} castShadow>
+                  <sphereGeometry args={[1, 12, 8]} />
+                  <meshLambertMaterial color="#00FF00" />
+                </mesh>
+                
+                {/* Subtle glow effect */}
+                <mesh position={[0, 4.8, 0]}>
+                  <sphereGeometry args={[2.2, 16, 12]} />
+                  <meshBasicMaterial 
+                    color="#90EE90" 
+                    transparent 
+                    opacity={0.08}
+                  />
                 </mesh>
               </group>
             ))}
@@ -555,14 +588,34 @@ export default function CityEcosystem({ isTransitioning }: CityEcosystemProps) {
         
         {type === 'tree' && (
           <>
-            {/* Single tree */}
+            {/* Stylized single tree with vibrant Free Fire colors */}
             <mesh position={[0, 2, 0]} castShadow>
-              <cylinderGeometry args={[0.3, 0.4, 4]} />
-              <meshLambertMaterial color="#8B4513" />
+              <cylinderGeometry args={[0.35, 0.45, 4, 8]} />
+              <meshLambertMaterial color="#A0522D" />
             </mesh>
+            
+            {/* Layered foliage for depth and vibrancy */}
             <mesh position={[0, 5, 0]} castShadow>
-              <sphereGeometry args={[2, 8, 6]} />
-              <meshLambertMaterial color="#228B22" />
+              <sphereGeometry args={[2.2, 12, 8]} />
+              <meshLambertMaterial color="#32CD32" />
+            </mesh>
+            <mesh position={[0, 5.8, 0]} castShadow>
+              <sphereGeometry args={[1.8, 12, 8]} />
+              <meshLambertMaterial color="#7CFC00" />
+            </mesh>
+            <mesh position={[0, 6.4, 0]} castShadow>
+              <sphereGeometry args={[1.2, 12, 8]} />
+              <meshLambertMaterial color="#00FF00" />
+            </mesh>
+            
+            {/* Glow effect for Free Fire style */}
+            <mesh position={[0, 5.2, 0]}>
+              <sphereGeometry args={[2.6, 16, 12]} />
+              <meshBasicMaterial 
+                color="#90EE90" 
+                transparent 
+                opacity={0.08}
+              />
             </mesh>
           </>
         )}
