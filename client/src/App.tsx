@@ -62,9 +62,9 @@ function App() {
         const gl = testCanvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) ||
                    testCanvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
         
-        // Force WebGL support for testing (bypass detection)
-        setSupportsWebGL(true);
-        console.log("WebGL preflight check: forcing support for testing");
+        // Set WebGL support to false to use 2D fallback
+        setSupportsWebGL(false);
+        console.log("WebGL preflight check: using 2D fallback mode");
         
         // Original detection code (commented for now)
         // if (gl) {
