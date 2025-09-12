@@ -88,10 +88,10 @@ export default function Player() {
     let hasSkinnedMesh = false;
     let boneCount = 0;
     model.traverse((child) => {
-      if (child.isSkinnedMesh) {
+      if ((child as any).isSkinnedMesh) {
         hasSkinnedMesh = true;
-        if (child.skeleton) {
-          boneCount = child.skeleton.bones.length;
+        if ((child as any).skeleton) {
+          boneCount = (child as any).skeleton.bones.length;
         }
       }
     });
@@ -113,7 +113,7 @@ export default function Player() {
       });
       
       // Start with idle animation
-      const idleAction = actions[idleClip?.name] || actions.idle || Object.values(actions)[0];
+      const idleAction = actions[idleClip?.name || ''] || actions.idle || Object.values(actions)[0];
       if (idleAction) {
         idleAction.play();
         currentActionRef.current = idleClip?.name || 'idle';
@@ -151,44 +151,66 @@ export default function Player() {
     }
   }, [animationState, actions, mixer, gltf.animations, clips]);
 
-  // Enhanced dash mechanics with dedicated dash key
-  const handleDashInput = (direction: string) => {
-    const currentTime = Date.now();
-    const lastTap = lastTapTimes[direction] || 0;
-    const timeDiff = currentTime - lastTap;
-    
-    // Enhanced dash system - either double-tap movement keys OR dedicated dash key
-    const currentControls = get();
-    const shouldDash = (timeDiff < 300 && dashCooldown.current <= 0) || (currentControls.dash && dashCooldown.current <= 0);
-    
-    if (shouldDash) {
-      isDashing.current = true;
-      dashCooldown.current = dashCooldownTime;
-      setAnimationState('dashing');
+  // Fixed dash mechanics - only on key events, not every frame
+  const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
+  
+  // Handle dash input on key press events (not every frame)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const key = event.code;
       
-      // Enhanced dash direction calculation
-      if (currentControls.forward) dashDirection.current.set(0, 0, -1);
-      else if (currentControls.backward) dashDirection.current.set(0, 0, 1);
-      else if (currentControls.leftward) dashDirection.current.set(-1, 0, 0);
-      else if (currentControls.rightward) dashDirection.current.set(1, 0, 0);
-      else dashDirection.current.set(0, 0, -1); // Default forward dash
+      // Only handle movement keys for dash detection
+      const movementKeys = ['KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+      if (!movementKeys.includes(key)) return;
       
-      playHit(); // Dash sound effect
+      const currentTime = Date.now();
+      const lastTap = lastTapTimes[key] || 0;
+      const timeDiff = currentTime - lastTap;
       
-      // Enhanced dash end transition
-      setTimeout(() => {
-        isDashing.current = false;
-        const updatedControls = get();
-        if (updatedControls.forward || updatedControls.backward || updatedControls.leftward || updatedControls.rightward) {
-          setAnimationState(updatedControls.sprint ? 'running' : 'walking');
-        } else {
-          setAnimationState('idle');
-        }
-      }, dashDuration * 1000);
-    }
+      // Strict double-tap detection (much tighter window)
+      const isDoubleTap = timeDiff < 250 && timeDiff > 50 && dashCooldown.current <= 0;
+      
+      if (isDoubleTap && !isDashing.current) {
+        console.log(`Dash triggered by double-tap: ${key}`);
+        isDashing.current = true;
+        dashCooldown.current = dashCooldownTime;
+        setAnimationState('dashing');
+        
+        // Set dash direction based on key
+        if (key === 'KeyW' || key === 'ArrowUp') dashDirection.current.set(0, 0, -1);
+        else if (key === 'KeyS' || key === 'ArrowDown') dashDirection.current.set(0, 0, 1);
+        else if (key === 'KeyA' || key === 'ArrowLeft') dashDirection.current.set(-1, 0, 0);
+        else if (key === 'KeyD' || key === 'ArrowRight') dashDirection.current.set(1, 0, 0);
+        
+        playHit();
+        
+        // End dash after duration
+        setTimeout(() => {
+          isDashing.current = false;
+          console.log('Dash ended, returning to normal movement');
+        }, dashDuration * 1000);
+      }
+      
+      setLastTapTimes(prev => ({ ...prev, [key]: currentTime }));
+      setPressedKeys(prev => new Set(prev).add(key));
+    };
     
-    setLastTapTimes(prev => ({ ...prev, [direction]: currentTime }));
-  };
+    const handleKeyUp = (event: KeyboardEvent) => {
+      setPressedKeys(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(event.code);
+        return newSet;
+      });
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [lastTapTimes, playHit]);
 
   useFrame((state, delta) => {
     if (!playerRef.current) return;
@@ -206,30 +228,48 @@ export default function Player() {
     const walkMode = controls.walk;
     const speedMultiplier = precisionMode ? 0.4 : walkMode ? 0.7 : 1.0;
     
-    // Enhanced directional movement with strafe support
+    // Clean directional movement input (no more frame-by-frame dash calls)
     if (controls.forward) {
       inputVector.z -= 1;
       isMoving = true;
       movementType = 'forward';
-      handleDashInput('forward');
     }
     if (controls.backward) {
       inputVector.z += 1;
       isMoving = true;
       movementType = 'backward';
-      handleDashInput('backward');
     }
     if (controls.leftward) {
       inputVector.x -= 1;
       isMoving = true;
       movementType = 'leftward';
-      handleDashInput('leftward');
     }
     if (controls.rightward) {
       inputVector.x += 1;
       isMoving = true;
       movementType = 'rightward';
-      handleDashInput('rightward');
+    }
+    
+    // Handle dedicated dash key
+    if (controls.dash && dashCooldown.current <= 0 && !isDashing.current) {
+      console.log('Dash triggered by dash key');
+      isDashing.current = true;
+      dashCooldown.current = dashCooldownTime;
+      setAnimationState('dashing');
+      
+      // Use current movement direction for dash
+      if (inputVector.length() > 0) {
+        dashDirection.current.copy(inputVector.normalize());
+      } else {
+        dashDirection.current.set(0, 0, -1); // Default forward
+      }
+      
+      playHit();
+      
+      setTimeout(() => {
+        isDashing.current = false;
+        console.log('Dash ended by timeout');
+      }, dashDuration * 1000);
     }
     
     // Dedicated strafe controls
@@ -268,21 +308,35 @@ export default function Player() {
     currentRotation.current += shortestAngle * currentRotationSpeed * delta;
     player.rotation.y = currentRotation.current;
 
-    // Enhanced movement with multiple speed modes
-    let targetSpeed = baseSpeed;
+    // Fixed speed system with consistent values
+    let targetSpeed = baseSpeed; // Base: 6 units/sec
+    let speedMode = 'normal';
     
     if (isDashing.current) {
-      targetSpeed *= dashSpeedMultiplier;
+      targetSpeed = baseSpeed * dashSpeedMultiplier; // 21 units/sec
+      speedMode = 'dash';
     } else if (controls.sprint && !walkMode && !precisionMode) {
-      targetSpeed *= runSpeedMultiplier;
+      targetSpeed = baseSpeed * runSpeedMultiplier; // 10.8 units/sec  
+      speedMode = 'run';
     } else if (walkMode) {
-      targetSpeed *= 0.7; // Walk mode
+      targetSpeed = baseSpeed * 0.7; // 4.2 units/sec
+      speedMode = 'walk';
     } else if (precisionMode) {
-      targetSpeed *= 0.4; // Precision mode
+      targetSpeed = baseSpeed * 0.4; // 2.4 units/sec
+      speedMode = 'precision';
+    } else {
+      targetSpeed = baseSpeed; // 6 units/sec
+      speedMode = 'normal';
     }
     
-    // Apply input-based speed modifier
-    targetSpeed *= Math.max(0.1, inputVector.length());
+    // Only apply input vector if moving (no more fractional speeds)
+    if (inputVector.length() > 0) {
+      // Normalize to maintain consistent speed in all directions
+      inputVector.normalize();
+    } else {
+      targetSpeed = 0;
+      speedMode = 'stopped';
+    }
     
     if (isMoving) {
       // Accelerate towards target velocity
@@ -293,35 +347,50 @@ export default function Player() {
       momentum.current.lerp(new THREE.Vector3(0, 0, 0), deceleration * delta);
     }
     
-    // Apply momentum to player position
+    // Apply momentum to player position with logging
     const frameMovement = momentum.current.clone().multiplyScalar(delta);
+    const oldPosition = player.position.clone();
     player.position.add(frameMovement);
     
-    // Enhanced animation state management with new states
+    // Reduced position logging - only significant changes
+    const actualMovement = player.position.distanceTo(oldPosition);
+    if (actualMovement > 0.1) { // Log every 0.1 units of movement
+      console.log(`Position: (${player.position.x.toFixed(1)}, ${player.position.z.toFixed(1)}) | ${speedMode} ${(actualMovement/delta).toFixed(1)} u/s`);
+    }
+    
+    // Fixed animation state machine with proper progression
     if (controls.jump && isOnGround.current) {
       setAnimationState('jumping');
       jumpAnimation.current = 0;
       velocity.current.y = jumpForce;
       isOnGround.current = false;
       playHit();
+      console.log('Movement State: jumping');
     } else if (isDashing.current) {
-      // Dashing state - already set in handleDashInput
+      // Dashing state - set elsewhere, don't override
+      console.log('Movement State: dashing (maintained)');
     } else if (isMoving && isOnGround.current) {
-      // Determine movement animation based on direction and speed
-      if (movementType === 'backward') {
-        setAnimationState('walking_backward');
+      // Proper movement state progression based on speed and input
+      let newState = 'walking';
+      
+      if (controls.sprint && !walkMode && !precisionMode) {
+        newState = 'running';
+      } else if (movementType === 'backward') {
+        newState = 'walking_backward';
       } else if (movementType === 'leftward' && !controls.forward && !controls.backward) {
-        setAnimationState('strafe_left');
+        newState = 'strafe_left';
       } else if (movementType === 'rightward' && !controls.forward && !controls.backward) {
-        setAnimationState('strafe_right');
-      } else {
-        const isRunning = controls.sprint;
-        setAnimationState(isRunning ? 'running' : 'walking');
+        newState = 'strafe_right';
       }
       
-      console.log(`Enhanced Animation: ${animationState}, Movement: ${movementType}, Sprint: ${controls.sprint}`);
-    } else if (isOnGround.current) {
+      // Only change state if it's actually different to avoid constant updates
+      if (animationState !== newState) {
+        setAnimationState(newState as typeof animationState);
+        console.log(`Movement State: ${animationState} → ${newState}`);
+      }
+    } else if (isOnGround.current && animationState !== 'idle') {
       setAnimationState('idle');
+      console.log('Movement State: → idle');
     }
     
     // Update movement direction for animations
@@ -446,7 +515,10 @@ export default function Player() {
           }
         });
         
-        console.log(`Enhanced Animation: ${animationState}, Speed: ${normalizedSpeed.toFixed(2)}, Phase: ${walkPhase.current.toFixed(2)}`);
+        // Reduced logging - only log on state changes
+        if (Math.floor(walkPhase.current / 10) % 50 === 0) { // Log every 50 animation cycles
+          console.log(`Animation: ${animationState}, Speed: ${normalizedSpeed.toFixed(2)}`);
+        }
       } else {
         // Enhanced idle state with subtle animations
         const breatheIntensity = 0.02;
