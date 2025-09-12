@@ -38,10 +38,10 @@ export default function Player() {
   const gravity = 25;
   const isOnGround = useRef(true);
   
-  // Character positioning - position character below ground level as requested
+  // Character positioning - position character above ground level as requested
   const characterScale = 2.5; // Increased scale for better visibility
   const characterHeight = characterScale * 1.0; // Approximate height based on scale
-  const groundLevel = -characterHeight / 2; // Character center positioned below ground level (underground)
+  const groundLevel = characterHeight / 2; // Character center positioned above ground level
 
   // Keyboard input detection with clear logging
   useEffect(() => {
@@ -161,13 +161,13 @@ export default function Player() {
     velocity.current.y -= gravity * delta;
     player.position.y += velocity.current.y * delta;
     
-    // Ground collision - keep character below ground level (underground)
-    if (player.position.y >= 0) {
+    // Ground collision - keep character above ground level
+    if (player.position.y <= groundLevel) {
       player.position.y = groundLevel;
       velocity.current.y = 0;
       isOnGround.current = true;
       
-      console.log(`🏃 Character underground at Y: ${groundLevel.toFixed(2)} (below terrain surface)`);
+      console.log(`🏃 Character above ground at Y: ${groundLevel.toFixed(2)} (above terrain surface)`);
       
       // Return to idle/walking when landing
       if (animationState === 'jumping') {
@@ -196,14 +196,14 @@ export default function Player() {
     camera.lookAt(player.position);
   });
 
-  // Initialize character below ground level as requested
+  // Initialize character above ground level as requested
   useEffect(() => {
     if (playerRef.current) {
       playerRef.current.position.set(0, groundLevel, 0);
-      console.log(`🎯 Character initialized underground (0,${groundLevel.toFixed(2)},0)`);
-      console.log('👟 Character positioned below the ground surface as requested');
-      console.log('📷 Camera setup for optimal underground viewing');
-      console.log(`📏 Character scale: ${characterScale}, Height: ${characterHeight.toFixed(2)}, Underground level: ${groundLevel.toFixed(2)}`);
+      console.log(`🎯 Character initialized above ground (0,${groundLevel.toFixed(2)},0)`);
+      console.log('👟 Character positioned above the ground surface as requested');
+      console.log('📷 Camera setup for optimal above-ground viewing');
+      console.log(`📏 Character scale: ${characterScale}, Height: ${characterHeight.toFixed(2)}, Above ground level: ${groundLevel.toFixed(2)}`);
     }
   }, [groundLevel, characterHeight, characterScale]);
 
