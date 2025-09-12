@@ -309,17 +309,36 @@ export default function GameUI() {
           </div>
         </div>
 
-        <button 
-          style={{
-            ...buttonStyle, 
-            fontSize: '18px', 
-            padding: '10px 15px',
-            background: isMuted ? 'linear-gradient(135deg, #f44336, #d32f2f)' : 'linear-gradient(135deg, #2196F3, #1976D2)'
-          }}
-          onClick={toggleMute}
-        >
-          {isMuted ? '🔇' : '🔊'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button 
+            style={{
+              ...buttonStyle, 
+              fontSize: '18px', 
+              padding: '10px 15px',
+              background: 'linear-gradient(135deg, #FFA726, #FF6F00)',
+              minWidth: '50px'
+            }}
+            onClick={() => {
+              console.log('Pause button clicked - showing pause menu');
+              togglePauseMenu();
+            }}
+            title="Pause Game (P or Esc)"
+          >
+            ⏸️
+          </button>
+          <button 
+            style={{
+              ...buttonStyle, 
+              fontSize: '18px', 
+              padding: '10px 15px',
+              background: isMuted ? 'linear-gradient(135deg, #f44336, #d32f2f)' : 'linear-gradient(135deg, #2196F3, #1976D2)',
+              minWidth: '50px'
+            }}
+            onClick={toggleMute}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </button>
+        </div>
       </div>
 
       {/* Objectives Panel */}
