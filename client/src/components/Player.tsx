@@ -377,40 +377,6 @@ export default function Player() {
         castShadow 
         receiveShadow
       />
-      
-      {/* Enhanced debug helpers - show player position and animation state */}
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[0.3, 0.3, 0.3]} />
-        <meshBasicMaterial 
-          color={isJumping ? "orange" : (animationState === 'running' ? "blue" : (animationState === 'walking' ? "purple" : "red"))} 
-          transparent 
-          opacity={0.8} 
-        />
-      </mesh>
-      
-      {/* Ground level indicator - shows where terrain surface is (Y=0) */}
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[1, 0.1, 1]} />
-        <meshBasicMaterial color="yellow" transparent opacity={0.5} />
-      </mesh>
-      
-      {/* Character feet position indicator with animation state */}
-      <mesh position={[0, -characterHeight/2, 0]}>
-        <boxGeometry args={[0.8, 0.1, 0.8]} />
-        <meshBasicMaterial 
-          color={isJumping ? "cyan" : (isMoving ? "lime" : "green")} 
-          transparent 
-          opacity={0.6} 
-        />
-      </mesh>
-      
-      {/* Jump effect visual indicator */}
-      {isJumping && (
-        <mesh position={[0, 1, 0]}>
-          <ringGeometry args={[1, 1.5, 8]} />
-          <meshBasicMaterial color="gold" transparent opacity={0.7} />
-        </mesh>
-      )}
     </group>
   );
 }

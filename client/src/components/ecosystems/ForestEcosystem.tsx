@@ -223,47 +223,87 @@ export default function ForestEcosystem({ isTransitioning }: ForestEcosystemProp
       <group key={`animal-${index}`} position={position} userData={{ type }}>
         {type === 'deer' && (
           <>
-            {/* Deer body */}
+            {/* Minecraft-style deer body - larger and more blocky */}
             <mesh position={[0, 1, 0]} castShadow>
-              <boxGeometry args={[0.8, 0.6, 1.4]} />
+              <boxGeometry args={[1.0, 0.8, 1.6]} />
               <meshLambertMaterial color="#8B4513" />
             </mesh>
-            {/* Deer head */}
-            <mesh position={[0, 1.5, 0.8]} castShadow>
-              <boxGeometry args={[0.4, 0.4, 0.6]} />
+            {/* Minecraft-style deer head - cubic */}
+            <mesh position={[0, 1.6, 0.9]} castShadow>
+              <boxGeometry args={[0.5, 0.5, 0.7]} />
               <meshLambertMaterial color="#A0522D" />
             </mesh>
-            {/* Antlers */}
-            <mesh position={[-0.1, 1.9, 0.8]} castShadow>
-              <cylinderGeometry args={[0.02, 0.02, 0.6]} />
-              <meshLambertMaterial color="#8B4513" />
+            {/* Minecraft-style blocky antlers */}
+            <mesh position={[-0.15, 2.1, 0.8]} castShadow>
+              <boxGeometry args={[0.08, 0.6, 0.08]} />
+              <meshLambertMaterial color="#654321" />
             </mesh>
-            <mesh position={[0.1, 1.9, 0.8]} castShadow>
-              <cylinderGeometry args={[0.02, 0.02, 0.6]} />
-              <meshLambertMaterial color="#8B4513" />
+            <mesh position={[0.15, 2.1, 0.8]} castShadow>
+              <boxGeometry args={[0.08, 0.6, 0.08]} />
+              <meshLambertMaterial color="#654321" />
+            </mesh>
+            {/* Antler branches - blocky style */}
+            <mesh position={[-0.15, 2.3, 0.6]} castShadow>
+              <boxGeometry args={[0.06, 0.06, 0.3]} />
+              <meshLambertMaterial color="#654321" />
+            </mesh>
+            <mesh position={[0.15, 2.3, 0.6]} castShadow>
+              <boxGeometry args={[0.06, 0.06, 0.3]} />
+              <meshLambertMaterial color="#654321" />
+            </mesh>
+            {/* Minecraft-style deer legs */}
+            <mesh position={[-0.3, 0.4, 0.4]} castShadow>
+              <boxGeometry args={[0.15, 0.8, 0.15]} />
+              <meshLambertMaterial color="#654321" />
+            </mesh>
+            <mesh position={[0.3, 0.4, 0.4]} castShadow>
+              <boxGeometry args={[0.15, 0.8, 0.15]} />
+              <meshLambertMaterial color="#654321" />
+            </mesh>
+            <mesh position={[-0.3, 0.4, -0.4]} castShadow>
+              <boxGeometry args={[0.15, 0.8, 0.15]} />
+              <meshLambertMaterial color="#654321" />
+            </mesh>
+            <mesh position={[0.3, 0.4, -0.4]} castShadow>
+              <boxGeometry args={[0.15, 0.8, 0.15]} />
+              <meshLambertMaterial color="#654321" />
             </mesh>
           </>
         )}
         
         {type === 'rabbit' && (
           <>
-            {/* Rabbit body */}
+            {/* Minecraft-style rabbit body - cubic */}
             <mesh position={[0, 0.4, 0]} castShadow>
-              <sphereGeometry args={[0.3, 8, 6]} />
-              <meshLambertMaterial color="#F5F5F5" />
+              <boxGeometry args={[0.5, 0.4, 0.7]} />
+              <meshLambertMaterial color="#F0F0F0" />
             </mesh>
-            {/* Rabbit head */}
-            <mesh position={[0, 0.7, 0.3]} castShadow>
-              <sphereGeometry args={[0.2, 8, 6]} />
-              <meshLambertMaterial color="#F5F5F5" />
+            {/* Minecraft-style rabbit head - cubic */}
+            <mesh position={[0, 0.7, 0.4]} castShadow>
+              <boxGeometry args={[0.3, 0.3, 0.3]} />
+              <meshLambertMaterial color="#F0F0F0" />
             </mesh>
-            {/* Rabbit ears */}
-            <mesh position={[-0.08, 0.95, 0.25]} castShadow>
-              <cylinderGeometry args={[0.03, 0.03, 0.3]} />
+            {/* Minecraft-style blocky rabbit ears */}
+            <mesh position={[-0.08, 1.1, 0.35]} castShadow>
+              <boxGeometry args={[0.06, 0.4, 0.06]} />
               <meshLambertMaterial color="#FFB6C1" />
             </mesh>
-            <mesh position={[0.08, 0.95, 0.25]} castShadow>
-              <cylinderGeometry args={[0.03, 0.03, 0.3]} />
+            <mesh position={[0.08, 1.1, 0.35]} castShadow>
+              <boxGeometry args={[0.06, 0.4, 0.06]} />
+              <meshLambertMaterial color="#FFB6C1" />
+            </mesh>
+            {/* Minecraft-style rabbit tail */}
+            <mesh position={[0, 0.5, -0.4]} castShadow>
+              <boxGeometry args={[0.12, 0.12, 0.12]} />
+              <meshLambertMaterial color="#FFFFFF" />
+            </mesh>
+            {/* Blocky rabbit feet */}
+            <mesh position={[-0.15, 0.1, 0.2]} castShadow>
+              <boxGeometry args={[0.12, 0.2, 0.25]} />
+              <meshLambertMaterial color="#FFB6C1" />
+            </mesh>
+            <mesh position={[0.15, 0.1, 0.2]} castShadow>
+              <boxGeometry args={[0.12, 0.2, 0.25]} />
               <meshLambertMaterial color="#FFB6C1" />
             </mesh>
           </>
@@ -271,19 +311,34 @@ export default function ForestEcosystem({ isTransitioning }: ForestEcosystemProp
         
         {type === 'bird' && (
           <>
-            {/* Bird body */}
+            {/* Minecraft-style bird body - rectangular */}
             <mesh castShadow>
-              <sphereGeometry args={[0.15, 8, 6]} />
+              <boxGeometry args={[0.25, 0.2, 0.35]} />
               <meshLambertMaterial color="#4169E1" />
             </mesh>
-            {/* Bird wings */}
-            <mesh position={[-0.2, 0, 0]} castShadow rotation={[0, 0, Math.PI/4]}>
-              <boxGeometry args={[0.3, 0.05, 0.15]} />
+            {/* Minecraft-style bird head */}
+            <mesh position={[0, 0.15, 0.25]} castShadow>
+              <boxGeometry args={[0.15, 0.15, 0.15]} />
               <meshLambertMaterial color="#1E90FF" />
             </mesh>
-            <mesh position={[0.2, 0, 0]} castShadow rotation={[0, 0, -Math.PI/4]}>
-              <boxGeometry args={[0.3, 0.05, 0.15]} />
-              <meshLambertMaterial color="#1E90FF" />
+            {/* Minecraft-style blocky bird wings */}
+            <mesh position={[-0.25, 0, 0]} castShadow rotation={[0, 0, Math.PI/6]}>
+              <boxGeometry args={[0.35, 0.08, 0.2]} />
+              <meshLambertMaterial color="#0000FF" />
+            </mesh>
+            <mesh position={[0.25, 0, 0]} castShadow rotation={[0, 0, -Math.PI/6]}>
+              <boxGeometry args={[0.35, 0.08, 0.2]} />
+              <meshLambertMaterial color="#0000FF" />
+            </mesh>
+            {/* Minecraft-style bird tail */}
+            <mesh position={[0, 0, -0.3]} castShadow>
+              <boxGeometry args={[0.15, 0.08, 0.2]} />
+              <meshLambertMaterial color="#000080" />
+            </mesh>
+            {/* Minecraft-style bird beak */}
+            <mesh position={[0, 0.15, 0.35]} castShadow>
+              <boxGeometry args={[0.04, 0.04, 0.1]} />
+              <meshLambertMaterial color="#FFA500" />
             </mesh>
           </>
         )}

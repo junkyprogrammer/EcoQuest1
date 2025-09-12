@@ -231,43 +231,73 @@ export default function OceanEcosystem({ isTransitioning }: OceanEcosystemProps)
       <group key={`marine-${index}`} position={position} userData={{ type }}>
         {type === 'fish' && (
           <>
-            {/* Fish body */}
+            {/* Minecraft-style fish body - rectangular */}
             <mesh castShadow>
-              <sphereGeometry args={[0.3, 8, 6]} />
+              <boxGeometry args={[0.5, 0.3, 0.7]} />
               <meshLambertMaterial color="#4169E1" />
             </mesh>
-            {/* Fish tail */}
+            {/* Minecraft-style fish tail - blocky */}
             <mesh position={[-0.4, 0, 0]} castShadow>
-              <coneGeometry args={[0.2, 0.4, 4]} />
+              <boxGeometry args={[0.15, 0.4, 0.3]} />
               <meshLambertMaterial color="#1E90FF" />
             </mesh>
-            {/* Fish fins */}
-            <mesh position={[0, 0.2, 0]} castShadow>
-              <boxGeometry args={[0.1, 0.3, 0.05]} />
+            {/* Minecraft-style fish fins - rectangular */}
+            <mesh position={[0, 0.25, 0]} castShadow>
+              <boxGeometry args={[0.08, 0.3, 0.06]} />
               <meshLambertMaterial color="#87CEEB" />
+            </mesh>
+            <mesh position={[0, -0.25, 0]} castShadow>
+              <boxGeometry args={[0.08, 0.3, 0.06]} />
+              <meshLambertMaterial color="#87CEEB" />
+            </mesh>
+            {/* Minecraft-style fish head details */}
+            <mesh position={[0.2, 0.1, 0.15]} castShadow>
+              <boxGeometry args={[0.06, 0.06, 0.06]} />
+              <meshLambertMaterial color="#000000" />
+            </mesh>
+            <mesh position={[0.2, 0.1, -0.15]} castShadow>
+              <boxGeometry args={[0.06, 0.06, 0.06]} />
+              <meshLambertMaterial color="#000000" />
             </mesh>
           </>
         )}
         
         {type === 'turtle' && (
           <>
-            {/* Turtle shell */}
+            {/* Minecraft-style turtle shell - hexagonal blocks */}
             <mesh castShadow>
-              <sphereGeometry args={[0.8, 8, 6]} />
+              <boxGeometry args={[1.2, 0.4, 1.4]} />
               <meshLambertMaterial color="#8FBC8F" />
             </mesh>
-            {/* Turtle flippers */}
-            <mesh position={[-0.6, 0, 0.4]} castShadow>
-              <boxGeometry args={[0.4, 0.1, 0.6]} />
+            {/* Shell pattern blocks */}
+            <mesh position={[0, 0.25, 0]} castShadow>
+              <boxGeometry args={[0.8, 0.1, 1.0]} />
+              <meshLambertMaterial color="#556B2F" />
+            </mesh>
+            <mesh position={[0, 0.35, 0]} castShadow>
+              <boxGeometry args={[0.4, 0.08, 0.6]} />
+              <meshLambertMaterial color="#228B22" />
+            </mesh>
+            {/* Minecraft-style turtle flippers - blocky */}
+            <mesh position={[-0.7, -0.1, 0.5]} castShadow>
+              <boxGeometry args={[0.3, 0.15, 0.4]} />
               <meshLambertMaterial color="#2F4F4F" />
             </mesh>
-            <mesh position={[0.6, 0, 0.4]} castShadow>
-              <boxGeometry args={[0.4, 0.1, 0.6]} />
+            <mesh position={[0.7, -0.1, 0.5]} castShadow>
+              <boxGeometry args={[0.3, 0.15, 0.4]} />
               <meshLambertMaterial color="#2F4F4F" />
             </mesh>
-            {/* Turtle head */}
-            <mesh position={[0, 0, 1]} castShadow>
-              <sphereGeometry args={[0.3, 8, 6]} />
+            <mesh position={[-0.7, -0.1, -0.5]} castShadow>
+              <boxGeometry args={[0.3, 0.15, 0.4]} />
+              <meshLambertMaterial color="#2F4F4F" />
+            </mesh>
+            <mesh position={[0.7, -0.1, -0.5]} castShadow>
+              <boxGeometry args={[0.3, 0.15, 0.4]} />
+              <meshLambertMaterial color="#2F4F4F" />
+            </mesh>
+            {/* Minecraft-style turtle head - cubic */}
+            <mesh position={[0, 0, 1.1]} castShadow>
+              <boxGeometry args={[0.4, 0.3, 0.5]} />
               <meshLambertMaterial color="#556B2F" />
             </mesh>
           </>
@@ -275,19 +305,29 @@ export default function OceanEcosystem({ isTransitioning }: OceanEcosystemProps)
         
         {type === 'dolphin' && (
           <>
-            {/* Dolphin body */}
-            <mesh castShadow>
-              <cylinderGeometry args={[0.4, 0.2, 2]} />
+            {/* Minecraft-style dolphin body - rectangular */}
+            <mesh castShadow rotation={[0, 0, Math.PI/2]}>
+              <boxGeometry args={[1.8, 0.6, 0.8]} />
               <meshLambertMaterial color="#708090" />
             </mesh>
-            {/* Dolphin nose */}
+            {/* Minecraft-style dolphin head */}
             <mesh position={[0, 0, 1.2]} castShadow>
-              <coneGeometry args={[0.15, 0.4]} />
+              <boxGeometry args={[0.4, 0.4, 0.6]} />
               <meshLambertMaterial color="#696969" />
             </mesh>
-            {/* Dolphin fin */}
+            {/* Minecraft-style dolphin nose - blocky */}
+            <mesh position={[0, 0, 1.6]} castShadow>
+              <boxGeometry args={[0.15, 0.15, 0.3]} />
+              <meshLambertMaterial color="#696969" />
+            </mesh>
+            {/* Minecraft-style dolphin fin */}
             <mesh position={[0, 0.5, 0]} castShadow>
-              <boxGeometry args={[0.1, 0.6, 0.3]} />
+              <boxGeometry args={[0.12, 0.6, 0.25]} />
+              <meshLambertMaterial color="#2F4F4F" />
+            </mesh>
+            {/* Minecraft-style dolphin tail */}
+            <mesh position={[0, 0, -1.2]} castShadow>
+              <boxGeometry args={[0.4, 0.08, 0.4]} />
               <meshLambertMaterial color="#2F4F4F" />
             </mesh>
           </>
@@ -295,25 +335,66 @@ export default function OceanEcosystem({ isTransitioning }: OceanEcosystemProps)
         
         {type === 'octopus' && (
           <>
-            {/* Octopus head */}
+            {/* Minecraft-style octopus head - cubic */}
             <mesh castShadow>
-              <sphereGeometry args={[0.5, 8, 6]} />
+              <boxGeometry args={[0.8, 0.8, 0.8]} />
               <meshLambertMaterial color="#8B008B" />
             </mesh>
-            {/* Octopus tentacles */}
+            {/* Minecraft-style octopus eyes */}
+            <mesh position={[-0.2, 0.2, 0.35]} castShadow>
+              <boxGeometry args={[0.12, 0.12, 0.08]} />
+              <meshLambertMaterial color="#FFFFFF" />
+            </mesh>
+            <mesh position={[0.2, 0.2, 0.35]} castShadow>
+              <boxGeometry args={[0.12, 0.12, 0.08]} />
+              <meshLambertMaterial color="#FFFFFF" />
+            </mesh>
+            <mesh position={[-0.2, 0.2, 0.4]} castShadow>
+              <boxGeometry args={[0.06, 0.06, 0.04]} />
+              <meshLambertMaterial color="#000000" />
+            </mesh>
+            <mesh position={[0.2, 0.2, 0.4]} castShadow>
+              <boxGeometry args={[0.06, 0.06, 0.04]} />
+              <meshLambertMaterial color="#000000" />
+            </mesh>
+            {/* Minecraft-style blocky octopus tentacles */}
             {Array.from({ length: 8 }).map((_, i) => (
-              <mesh 
-                key={`tentacle-${i}`}
-                position={[
-                  Math.cos((i * Math.PI * 2) / 8) * 0.8,
-                  -0.3,
-                  Math.sin((i * Math.PI * 2) / 8) * 0.8
-                ]}
-                castShadow
-              >
-                <cylinderGeometry args={[0.08, 0.15, 1.2]} />
-                <meshLambertMaterial color="#9932CC" />
-              </mesh>
+              <group key={`tentacle-group-${i}`}>
+                {/* Multiple box segments for each tentacle */}
+                <mesh 
+                  position={[
+                    Math.cos((i * Math.PI * 2) / 8) * 0.5,
+                    -0.6,
+                    Math.sin((i * Math.PI * 2) / 8) * 0.5
+                  ]}
+                  castShadow
+                >
+                  <boxGeometry args={[0.15, 0.3, 0.15]} />
+                  <meshLambertMaterial color="#9932CC" />
+                </mesh>
+                <mesh 
+                  position={[
+                    Math.cos((i * Math.PI * 2) / 8) * 0.7,
+                    -0.9,
+                    Math.sin((i * Math.PI * 2) / 8) * 0.7
+                  ]}
+                  castShadow
+                >
+                  <boxGeometry args={[0.12, 0.25, 0.12]} />
+                  <meshLambertMaterial color="#8B008B" />
+                </mesh>
+                <mesh 
+                  position={[
+                    Math.cos((i * Math.PI * 2) / 8) * 0.85,
+                    -1.1,
+                    Math.sin((i * Math.PI * 2) / 8) * 0.85
+                  ]}
+                  castShadow
+                >
+                  <boxGeometry args={[0.1, 0.2, 0.1]} />
+                  <meshLambertMaterial color="#9932CC" />
+                </mesh>
+              </group>
             ))}
           </>
         )}
