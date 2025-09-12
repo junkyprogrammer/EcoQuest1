@@ -1,31 +1,60 @@
 import { useRef, useMemo, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useKeyboardControls, useGLTF } from "@react-three/drei";
+import { useKeyboardControls } from "@react-three/drei";
 import * as THREE from "three";
 import { Controls } from "../App";
 import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
-// Component for the realistic tree
-function RealisticTree({ position }: { position: [number, number, number] }) {
-  const { scene } = useGLTF('/models/realistic_tree.glb');
+// Component for the stylized Free Fire-style tree
+function StylizedTree({ position }: { position: [number, number, number] }) {
   const meshRef = useRef<THREE.Group>(null);
 
-  // Gentle swaying animation
+  // Enhanced swaying animation for more dynamic feel
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
+      const time = state.clock.elapsedTime;
+      meshRef.current.rotation.z = Math.sin(time * 0.8) * 0.08;
+      // Add slight bounce effect
+      meshRef.current.position.y = position[1] + Math.sin(time * 1.2) * 0.02;
     }
   });
 
   return (
     <group ref={meshRef} position={position}>
-      <primitive 
-        object={scene.clone()} 
-        scale={[2.5, 2.5, 2.5]}
-        castShadow 
-        receiveShadow
-      />
+      {/* Tree trunk - clean cylindrical shape */}
+      <mesh position={[0, 2, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.4, 0.6, 4, 8]} />
+        <meshLambertMaterial color="#8B4513" />
+      </mesh>
+      
+      {/* Lower foliage layer - vibrant green */}
+      <mesh position={[0, 4.5, 0]} castShadow>
+        <sphereGeometry args={[2.2, 12, 8]} />
+        <meshLambertMaterial color="#32CD32" />
+      </mesh>
+      
+      {/* Middle foliage layer - slightly darker green */}
+      <mesh position={[0, 5.5, 0]} castShadow>
+        <sphereGeometry args={[1.8, 12, 8]} />
+        <meshLambertMaterial color="#228B22" />
+      </mesh>
+      
+      {/* Top foliage layer - bright accent */}
+      <mesh position={[0, 6.2, 0]} castShadow>
+        <sphereGeometry args={[1.2, 12, 8]} />
+        <meshLambertMaterial color="#7CFC00" />
+      </mesh>
+      
+      {/* Highlight glow effect for Free Fire style */}
+      <mesh position={[0, 5, 0]}>
+        <sphereGeometry args={[2.5, 16, 12]} />
+        <meshBasicMaterial 
+          color="#90EE90" 
+          transparent 
+          opacity={0.1}
+        />
+      </mesh>
     </group>
   );
 }
@@ -38,12 +67,12 @@ export default function EnvironmentalObjects() {
   const playerRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const [nearbyInteractables, setNearbyInteractables] = useState<{type: string, id: number, distance: number}[]>([]);
 
-  // Pre-calculate positions for recycling bins
+  // Pre-calculate positions for recycling bins with vibrant Free Fire colors
   const recyclingBins = useMemo(() => [
-    { position: [10, 1, 5] as [number, number, number], type: 'plastic', color: '#2196F3' },
-    { position: [12, 1, 5] as [number, number, number], type: 'paper', color: '#4CAF50' },
-    { position: [14, 1, 5] as [number, number, number], type: 'glass', color: '#FF9800' },
-    { position: [-10, 1, -10] as [number, number, number], type: 'plastic', color: '#2196F3' }
+    { position: [10, 1, 5] as [number, number, number], type: 'plastic', color: '#00BFFF', accent: '#1E90FF' },
+    { position: [12, 1, 5] as [number, number, number], type: 'paper', color: '#32CD32', accent: '#00FF00' },
+    { position: [14, 1, 5] as [number, number, number], type: 'glass', color: '#FFD700', accent: '#FFA500' },
+    { position: [-10, 1, -10] as [number, number, number], type: 'plastic', color: '#00BFFF', accent: '#1E90FF' }
   ], []);
 
   // Quiz stations
@@ -113,22 +142,50 @@ export default function EnvironmentalObjects() {
 
   return (
     <group>
-      {/* Recycling Bins */}
+      {/* Stylized Free Fire Recycling Bins */}
       {recyclingBins.map((bin, index) => (
         <group key={`bin-${index}`} position={bin.position}>
-          {/* Bin body */}
+          {/* Modern bin body with octagonal shape */}
           <mesh castShadow>
-            <cylinderGeometry args={[1, 1.2, 2, 8]} />
+            <cylinderGeometry args={[1, 1.2, 2.5, 8]} />
             <meshLambertMaterial color={bin.color} />
           </mesh>
-          {/* Bin lid */}
-          <mesh position={[0, 1.2, 0]} castShadow>
-            <cylinderGeometry args={[1.1, 1.1, 0.2, 8]} />
-            <meshLambertMaterial color={bin.color} />
+          
+          {/* Accent stripes for modern look */}
+          <mesh position={[0, 0.5, 0]} castShadow>
+            <cylinderGeometry args={[1.05, 1.25, 0.3, 8]} />
+            <meshLambertMaterial color={bin.accent} />
           </mesh>
+          <mesh position={[0, -0.5, 0]} castShadow>
+            <cylinderGeometry args={[1.05, 1.25, 0.3, 8]} />
+            <meshLambertMaterial color={bin.accent} />
+          </mesh>
+          
+          {/* Modern lid with glow effect */}
+          <mesh position={[0, 1.4, 0]} castShadow>
+            <cylinderGeometry args={[1.1, 1.1, 0.3, 8]} />
+            <meshLambertMaterial color={bin.accent} />
+          </mesh>
+          
+          {/* Type indicator icon - simplified geometric shape */}
+          <mesh position={[0, 0, 1.3]}>
+            <boxGeometry args={[0.4, 0.4, 0.1]} />
+            <meshBasicMaterial color="#FFFFFF" />
+          </mesh>
+          
+          {/* Subtle glow effect around the bin */}
+          <mesh>
+            <cylinderGeometry args={[1.5, 1.7, 2.8, 16]} />
+            <meshBasicMaterial 
+              color={bin.color} 
+              transparent 
+              opacity={0.1}
+            />
+          </mesh>
+          
           {/* Enhanced Interaction indicator */}
           <InteractionIndicator 
-            position={[0, 3, 0]} 
+            position={[0, 3.2, 0]} 
             isNearby={nearbyInteractables.some(item => item.type === 'recycling' && item.id === index)}
             distance={nearbyInteractables.find(item => item.type === 'recycling' && item.id === index)?.distance || 10}
             label="Press E to Recycle"
@@ -159,12 +216,12 @@ export default function EnvironmentalObjects() {
         </group>
       ))}
 
-      {/* Realistic Trees */}
-      <RealisticTree position={[-5, 0, -8]} />
-      <RealisticTree position={[8, 0, -12]} />
-      <RealisticTree position={[-12, 0, 8]} />
-      <RealisticTree position={[15, 0, 10]} />
-      <RealisticTree position={[-18, 0, -5]} />
+      {/* Stylized Trees */}
+      <StylizedTree position={[-5, 0, -8]} />
+      <StylizedTree position={[8, 0, -12]} />
+      <StylizedTree position={[-12, 0, 8]} />
+      <StylizedTree position={[15, 0, 10]} />
+      <StylizedTree position={[-18, 0, -5]} />
 
       {/* Wind Turbines */}
       <WindTurbine position={[30, 0, 30]} />

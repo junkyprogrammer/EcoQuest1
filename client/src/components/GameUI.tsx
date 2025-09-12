@@ -1,7 +1,11 @@
 import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
+import { useKeyboardControls } from "@react-three/drei";
+import { Controls } from "../App";
 import MiniGames from "./MiniGames";
 import Quiz from "./Quiz";
+import EcosystemSelection from "./EcosystemSelection";
+import PauseMenu from "./PauseMenu";
 import { useState, useEffect } from "react";
 
 export default function GameUI() {
@@ -14,12 +18,21 @@ export default function GameUI() {
     inventory, 
     showMiniGame, 
     showQuiz,
+    showPauseMenu,
+    isPaused,
+    currentEcosystem,
+    availableEcosystems,
+    ecosystemProgress,
     start,
-    restart 
+    restart,
+    showEcosystemSelection,
+    togglePauseMenu
   } = useGameState();
   const { isMuted, toggleMute } = useAudio();
+  const [subscribe, get] = useKeyboardControls<Controls>();
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [isInventoryExpanded, setIsInventoryExpanded] = useState(false);
 
   // Show tutorial on first level
   useEffect(() => {
@@ -28,6 +41,20 @@ export default function GameUI() {
       setTutorialStep(0);
     }
   }, [gamePhase, currentLevel, score]);
+
+  // Handle pause key controls
+  useEffect(() => {
+    const unsubscribe = subscribe(
+      (state) => state.pause,
+      (pressed) => {
+        if (pressed && gamePhase === 'playing' && !showMiniGame && !showQuiz && !showTutorial) {
+          console.log('Pause key pressed - toggling pause menu');
+          togglePauseMenu();
+        }
+      }
+    );
+    return unsubscribe;
+  }, [subscribe, gamePhase, showMiniGame, showQuiz, showTutorial, togglePauseMenu]);
 
   const uiStyle = {
     position: 'absolute' as const,
@@ -103,6 +130,10 @@ export default function GameUI() {
         </div>
       </div>
     );
+  }
+
+  if (gamePhase === 'ecosystem_selection') {
+    return <EcosystemSelection />;
   }
 
   if (gamePhase === 'ended') {
@@ -195,43 +226,119 @@ export default function GameUI() {
           </div>
         </div>
         
-        <div>
+        <div style={{ maxWidth: '350px', minWidth: '200px' }}>
           <div style={{ 
-            fontSize: '16px', 
-            marginBottom: '8px',
-            color: '#e0e0e0',
-            fontWeight: '600'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '8px'
           }}>
-            Inventory:
-          </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {Object.entries(inventory).map(([item, count]) => (
-              <span key={item} style={{ 
-                background: 'linear-gradient(135deg, #4CAF50, #45a049)',
-                padding: '4px 12px', 
-                borderRadius: '8px',
-                fontSize: '13px',
+            <div style={{ 
+              fontSize: '16px', 
+              color: '#e0e0e0',
+              fontWeight: '600'
+            }}>
+              Inventory:
+            </div>
+            <button
+              className="inventory-toggle-btn"
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                color: '#8BC34A',
+                fontSize: '12px',
                 fontWeight: '600',
-                boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
-              }}>
-                {item}: {count}
-              </span>
-            ))}
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                pointerEvents: 'auto'
+              }}
+              onClick={() => setIsInventoryExpanded(!isInventoryExpanded)}
+            >
+              {isInventoryExpanded ? '▼ Less' : '▶ More'}
+            </button>
+          </div>
+          
+          <div style={{ 
+            display: 'flex', 
+            gap: '10px', 
+            flexWrap: 'wrap',
+            maxHeight: isInventoryExpanded ? '150px' : '32px',
+            overflow: 'hidden',
+            transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative'
+          }}>
+            {(() => {
+              const inventoryItems = Object.entries(inventory);
+              const itemsToShow = isInventoryExpanded ? inventoryItems : inventoryItems.slice(0, 3);
+              
+              return (
+                <>
+                  {itemsToShow.map(([item, count]) => (
+                    <span key={item} style={{ 
+                      background: 'linear-gradient(135deg, #4CAF50, #45a049)',
+                      padding: '4px 12px', 
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {item}: {count}
+                    </span>
+                  ))}
+                  {!isInventoryExpanded && inventoryItems.length > 3 && (
+                    <span style={{ 
+                      color: '#8BC34A',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}>
+                      +{inventoryItems.length - 3} more...
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
-        <button 
-          style={{
-            ...buttonStyle, 
-            fontSize: '18px', 
-            padding: '10px 15px',
-            background: isMuted ? 'linear-gradient(135deg, #f44336, #d32f2f)' : 'linear-gradient(135deg, #2196F3, #1976D2)'
-          }}
-          onClick={toggleMute}
-        >
-          {isMuted ? '🔇' : '🔊'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button 
+            style={{
+              ...buttonStyle, 
+              fontSize: '18px', 
+              padding: '10px 15px',
+              background: 'linear-gradient(135deg, #FFA726, #FF6F00)',
+              minWidth: '50px'
+            }}
+            onClick={() => {
+              console.log('Pause button clicked - showing pause menu');
+              togglePauseMenu();
+            }}
+            title="Pause Game (P or Esc)"
+          >
+            ⏸️
+          </button>
+          <button 
+            style={{
+              ...buttonStyle, 
+              fontSize: '18px', 
+              padding: '10px 15px',
+              background: isMuted ? 'linear-gradient(135deg, #f44336, #d32f2f)' : 'linear-gradient(135deg, #2196F3, #1976D2)',
+              minWidth: '50px'
+            }}
+            onClick={toggleMute}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </button>
+        </div>
       </div>
 
       {/* Objectives Panel */}
@@ -321,6 +428,9 @@ export default function GameUI() {
       {/* Mini-games and quiz overlays */}
       {showMiniGame && <MiniGames />}
       {showQuiz && <Quiz />}
+      
+      {/* Pause Menu */}
+      {showPauseMenu && <PauseMenu />}
 
       {/* Tutorial Overlay */}
       {showTutorial && (

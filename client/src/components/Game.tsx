@@ -2,7 +2,9 @@ import { useFrame } from "@react-three/fiber";
 import { useRef, useEffect } from "react";
 import * as THREE from "three";
 import Player from "./Player";
-import Environment from "./Environment";
+import EcosystemManager from "./EcosystemManager";
+import PlaygroundEnvironment from "./PlaygroundEnvironment";
+import NPCs from "./NPCs";
 import Lights from "./Lights";
 import Terrain from "./Terrain";
 import EnvironmentalObjects from "./EnvironmentalObjects";
@@ -11,9 +13,12 @@ import { useGameState } from "../lib/stores/useGameState";
 
 export default function Game() {
   const groupRef = useRef<THREE.Group>(null);
-  const { gamePhase, currentLevel } = useGameState();
+  const { gamePhase, currentLevel, currentEcosystem, ecosystemTransitioning, isPaused } = useGameState();
 
   useFrame((state, delta) => {
+    // Pause game loop when pause menu is open
+    if (isPaused) return;
+    
     // Game loop logic here
     if (gamePhase === 'playing') {
       // Update game state each frame
@@ -27,11 +32,19 @@ export default function Game() {
   return (
     <group ref={groupRef}>
       <Lights />
+      {/* Basic Environment */}
       <Terrain />
       <Player />
-      <Environment />
-      <EnvironmentalObjects />
+      
+      {/* Collectible Items - All inventory items can be collected */}
       <CollectibleItems />
+      
+      {/* Ecosystem manager for additional features */}
+      <EcosystemManager 
+        currentEcosystem={currentEcosystem}
+        transitionDuration={2.0}
+      />
+      <EnvironmentalObjects />
     </group>
   );
 }
