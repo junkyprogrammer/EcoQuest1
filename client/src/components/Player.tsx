@@ -22,11 +22,16 @@ export default function Player() {
   }, [characterModel]);
   
   const playerRef = useRef<THREE.Group>(null);
+  // FIXED: Hip joint system for realistic leg pivoting
+  const leftHipRef = useRef<THREE.Group>(null);
+  const rightHipRef = useRef<THREE.Group>(null);
+  const leftLegRef = useRef<THREE.Mesh>(null);
+  const rightLegRef = useRef<THREE.Mesh>(null);
   const [subscribe, get] = useKeyboardControls<Controls>();
   const { isPaused } = useGameState();
   const { playHit } = useAudio();
   
-  // Enhanced movement state
+  // Enhanced movement state - optimized for performance
   const [isMoving, setIsMoving] = useState(false);
   const [animationState, setAnimationState] = useState<'idle' | 'walking' | 'running' | 'jumping'>('idle');
   const currentRotation = useRef(0);
@@ -35,6 +40,17 @@ export default function Player() {
   const runningEffectTime = useRef(0);
   const walkingTime = useRef(0);
   const [isJumping, setIsJumping] = useState(false);
+  
+  // FIXED: Performance optimization - Replace React state with refs
+  const leftLegPhaseRef = useRef(0);
+  const rightLegPhaseRef = useRef(0);
+  
+  // FIXED: Performance - throttled logging
+  const logFrameCounter = useRef(0);
+  const shouldLog = () => {
+    logFrameCounter.current++;
+    return logFrameCounter.current % 60 === 0; // Log every 60 frames (~1x/second at 60fps)
+  };
   
   // Enhanced movement constants
   const moveSpeed = 8;
@@ -60,6 +76,30 @@ export default function Player() {
   const characterScale = 2.5; // Increased scale for better visibility
   const characterHeight = characterScale * 1.0; // Approximate height based on scale
   const groundLevel = 4.0; // Character positioned significantly above ground level for optimal visibility
+
+  // ========== REALISTIC LEG WALKING ANIMATION SYSTEM ==========
+  // Realistic leg animation constants for natural human walking
+  const legWalkingSpeed = 4; // Cycles per second for natural leg movement
+  const legRunningSpeed = 6.5; // Faster leg cycles for running animation
+  const legSwingAngle = 0.8; // Maximum forward/backward leg swing angle (radians)
+  const legSwingRunAngle = 1.2; // More dramatic leg swing for running
+  const kneeBendAngle = 0.4; // Natural knee bending during walking cycle
+  const kneeBendRunAngle = 0.6; // More pronounced knee bending for running
+  const legLength = 1.2; // Length of each leg mesh
+  const legThickness = 0.15; // Thickness of leg meshes for visibility
+  const legHipOffset = 0.3; // Distance from character center to each leg
+  const legVerticalOffset = -0.8; // Position legs below character body
+  
+  // FIXED: Optimized leg animation state tracking
+  const leftLegWalkTime = useRef(0);
+  const rightLegWalkTime = useRef(0);
+  
+  // FIXED: Hip joint positioning for realistic pivot points
+  const hipJointConfig = {
+    leftHipPosition: { x: -legHipOffset, y: legVerticalOffset + legLength/2, z: 0 },
+    rightHipPosition: { x: legHipOffset, y: legVerticalOffset + legLength/2, z: 0 },
+    legMeshOffset: { x: 0, y: -legLength/2, z: 0 } // Position leg below hip joint for realistic pivot
+  };
 
   // Keyboard input detection with clear logging
   useEffect(() => {
@@ -122,22 +162,22 @@ export default function Player() {
     if (controls.forward) {
       inputVector.z -= 1;
       playerIsMoving = true;
-      console.log('🎮 W - Moving FORWARD');
+      if (shouldLog()) console.log('🎮 W - Moving FORWARD');
     }
     if (controls.backward) {
       inputVector.z += 1;
       playerIsMoving = true;
-      console.log('🎮 S - Moving BACKWARD');
+      if (shouldLog()) console.log('🎮 S - Moving BACKWARD');
     }
     if (controls.leftward) {
       inputVector.x -= 1;
       playerIsMoving = true;
-      console.log('🎮 A - Moving LEFT');
+      if (shouldLog()) console.log('🎮 A - Moving LEFT');
     }
     if (controls.rightward) {
       inputVector.x += 1;
       playerIsMoving = true;
-      console.log('🎮 D - Moving RIGHT');
+      if (shouldLog()) console.log('🎮 D - Moving RIGHT');
     }
     
     // ENHANCED DRAMATIC JUMP INPUT - Visual effects only, NO Y position changes
@@ -155,12 +195,12 @@ export default function Player() {
       
       // ENHANCED DIRECTIONAL ROTATION - Calculate target rotation based on movement direction
       targetRotation.current = Math.atan2(inputVector.x, inputVector.z);
-      console.log(`🧭 Movement direction: ${(targetRotation.current * 180 / Math.PI).toFixed(1)}°`);
+      if (shouldLog()) console.log(`🧭 Movement direction: ${(targetRotation.current * 180 / Math.PI).toFixed(1)}°`);
     }
     
-    // Calculate movement speed
-    const currentSpeed = controls.sprint ? runSpeed : moveSpeed;
-    const speedMode = controls.sprint ? 'RUNNING' : 'WALKING';
+    // FIXED: Calculate movement speed with fallback for undefined sprint
+    const currentSpeed = (controls.sprint ?? false) ? runSpeed : moveSpeed;
+    const speedMode = (controls.sprint ?? false) ? 'RUNNING' : 'WALKING';
     
     // Apply horizontal movement with enhanced effects
     if (playerIsMoving) {
@@ -172,17 +212,17 @@ export default function Player() {
       player.position.set(newX, 4.0, newZ); // CRITICAL: Y always stays at 4.0
       
       // Update walking/running animation timers
-      if (controls.sprint) {
+      if (controls.sprint ?? false) {
         runningEffectTime.current += delta * runningBobSpeed;
-        console.log(`🏃‍♂️ MINECRAFT RUNNING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s - Bob effects active!`);
+        if (shouldLog()) console.log(`🏃‍♂️ MINECRAFT RUNNING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s`);
       } else {
         walkingTime.current += delta * walkingBobSpeed;
-        console.log(`🚶 MINECRAFT WALKING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s - Bob effects active!`);
+        if (shouldLog()) console.log(`🚶 MINECRAFT WALKING: (${player.position.x.toFixed(2)}, 4.0, ${player.position.z.toFixed(2)}) Speed: ${currentSpeed}u/s`);
       }
       
       // Update animation state (only if not jumping)
       if (!isJumping) {
-        setAnimationState(controls.sprint ? 'running' : 'walking');
+        setAnimationState((controls.sprint ?? false) ? 'running' : 'walking');
       }
       setIsMoving(true);
     } else {
@@ -208,7 +248,7 @@ export default function Player() {
       currentRotation.current += adjustedDifference * rotationSpeed * delta;
       player.rotation.y = currentRotation.current;
       
-      console.log(`🔄 Character rotation: ${(currentRotation.current * 180 / Math.PI).toFixed(1)}° (facing movement direction)`);
+      if (shouldLog()) console.log(`🔄 Character rotation: ${(currentRotation.current * 180 / Math.PI).toFixed(1)}° (facing movement direction)`);
     }
     
     // 🚀 ENHANCED DRAMATIC JUMPING VISUAL EFFECTS - NO Y position changes, purely visual
@@ -240,7 +280,7 @@ export default function Player() {
         model.scale.multiplyScalar(1 + glowPulse);
       }
       
-      console.log(`🚀 DRAMATIC JUMP: Progress: ${(jumpProgress * 100).toFixed(1)}%, Scale: (${scaleX.toFixed(2)}, ${scaleY.toFixed(2)}, ${scaleZ.toFixed(2)}), Y stays at 4.0!`);
+      if (shouldLog()) console.log(`🚀 DRAMATIC JUMP: Progress: ${(jumpProgress * 100).toFixed(1)}%, Scale: (${scaleX.toFixed(2)}, ${scaleY.toFixed(2)}, ${scaleZ.toFixed(2)}), Y stays at 4.0!`);
       
       // End jump animation with smooth return
       if (jumpAnimationTime.current >= jumpAnimationDuration) {
@@ -249,8 +289,8 @@ export default function Player() {
         model.scale.setScalar(characterScale);
         model.rotation.x = 0;
         model.rotation.z = 0;
-        setAnimationState(playerIsMoving ? (controls.sprint ? 'running' : 'walking') : 'idle');
-        console.log('🎯 Dramatic jump animation complete - returned to normal state');
+        setAnimationState(playerIsMoving ? ((controls.sprint ?? false) ? 'running' : 'walking') : 'idle');
+        if (shouldLog()) console.log('🎯 Dramatic jump animation complete - returned to normal state');
       }
     }
     
@@ -292,6 +332,78 @@ export default function Player() {
       model.scale.setScalar(characterScale);
       model.rotation.x = 0;
       model.rotation.z = 0;
+    }
+    
+    // ========== FIXED: REALISTIC HIP JOINT LEG ANIMATION SYSTEM ==========
+    // CRITICAL FIX: Proper hip joint system for realistic leg pivoting from hip points
+    if (leftHipRef.current && rightHipRef.current && leftLegRef.current && rightLegRef.current) {
+      // Calculate current walking/running speed and cycle timing
+      const currentLegSpeed = (controls.sprint ?? false) ? legRunningSpeed : legWalkingSpeed;
+      const maxSwingAngle = (controls.sprint ?? false) ? legSwingRunAngle : legSwingAngle;
+      
+      if (playerIsMoving && !isJumping) {
+        // Update walking cycle time for realistic leg movement
+        leftLegWalkTime.current += delta * currentLegSpeed;
+        rightLegWalkTime.current += delta * currentLegSpeed;
+        
+        // Calculate walking cycle phases with opposing leg movement
+        // Left leg phase starts at 0, right leg starts at π (180°) for alternating motion
+        const leftLegCycle = leftLegWalkTime.current;
+        const rightLegCycle = rightLegWalkTime.current + Math.PI; // 180° phase offset
+        
+        // FIXED: Calculate realistic leg swing angles using sine waves
+        // Forward swing: positive angle, backward swing: negative angle
+        const leftLegSwing = Math.sin(leftLegCycle) * maxSwingAngle;
+        const rightLegSwing = Math.sin(rightLegCycle) * maxSwingAngle;
+        
+        // FIXED: Apply realistic leg rotations to HIP JOINTS (not legs directly)
+        // This makes legs pivot from hip point like real human walking - CRITICAL FIX!
+        leftHipRef.current.rotation.x = leftLegSwing;
+        rightHipRef.current.rotation.x = rightLegSwing;
+        
+        // FIXED: Performance optimization - use refs instead of React state
+        leftLegPhaseRef.current = leftLegCycle % (2 * Math.PI);
+        rightLegPhaseRef.current = rightLegCycle % (2 * Math.PI);
+        
+        // FIXED: Throttled logging for performance
+        if (shouldLog()) {
+          if (controls.sprint ?? false) {
+            console.log(`🦵 REALISTIC HIP RUNNING: L-Hip: ${leftLegSwing.toFixed(2)}° R-Hip: ${rightLegSwing.toFixed(2)}°`);
+          } else {
+            console.log(`🚶‍♂️ REALISTIC HIP WALKING: L-Hip: ${leftLegSwing.toFixed(2)}° R-Hip: ${rightLegSwing.toFixed(2)}°`);
+          }
+        }
+        
+      } else {
+        // FIXED: Reset hip joints to neutral position when idle
+        leftHipRef.current.rotation.x = 0;
+        rightHipRef.current.rotation.x = 0;
+        
+        // Reset walking cycle timers
+        leftLegWalkTime.current = 0;
+        rightLegWalkTime.current = 0;
+        leftLegPhaseRef.current = 0;
+        rightLegPhaseRef.current = Math.PI;
+        
+        if (shouldLog()) console.log('🧍 LEGS IDLE: Hip joints in neutral position');
+      }
+      
+      // FIXED: Position hip joints at proper hip locations for realistic pivot points
+      leftHipRef.current.position.set(
+        hipJointConfig.leftHipPosition.x, 
+        hipJointConfig.leftHipPosition.y, 
+        hipJointConfig.leftHipPosition.z
+      );
+      rightHipRef.current.position.set(
+        hipJointConfig.rightHipPosition.x, 
+        hipJointConfig.rightHipPosition.y, 
+        hipJointConfig.rightHipPosition.z
+      );
+      
+      // FIXED: Scale hip joints with character for consistent proportions
+      const legScale = characterScale * 0.8;
+      leftHipRef.current.scale.setScalar(legScale);
+      rightHipRef.current.scale.setScalar(legScale);
     }
     
     // CRITICAL: Always ensure Y position stays at 4.0
@@ -354,6 +466,15 @@ export default function Player() {
     }
   }, [groundLevel, characterHeight, characterScale]);
 
+  // Initialize leg animation system
+  useEffect(() => {
+    console.log('🦵 REALISTIC LEG ANIMATION SYSTEM: Initialized!');
+    console.log(`📏 Leg specifications: Length: ${legLength}, Thickness: ${legThickness}, Hip offset: ${legHipOffset}`);
+    console.log(`🎯 Walking cycle: Speed: ${legWalkingSpeed} cycles/sec, Max swing: ${(legSwingAngle * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`🏃 Running cycle: Speed: ${legRunningSpeed} cycles/sec, Max swing: ${(legSwingRunAngle * 180 / Math.PI).toFixed(1)}°`);
+    console.log('✨ Realistic human-like leg movement ready!');
+  }, []);
+
   // Enhanced animation state logging
   useEffect(() => {
     console.log(`🎭 Animation state: ${animationState} ${isJumping ? '(JUMPING)' : ''} ${isMoving ? '(MOVING)' : '(IDLE)'}`);
@@ -377,6 +498,47 @@ export default function Player() {
         castShadow 
         receiveShadow
       />
+      
+      {/* ========== FIXED: REALISTIC HIP JOINT SYSTEM ========== */}
+      {/* CRITICAL FIX: Left hip joint with leg as child for proper pivot motion */}
+      <group 
+        ref={leftHipRef}
+        position={[hipJointConfig.leftHipPosition.x, hipJointConfig.leftHipPosition.y, hipJointConfig.leftHipPosition.z]}
+      >
+        <mesh 
+          ref={leftLegRef}
+          position={[hipJointConfig.legMeshOffset.x, hipJointConfig.legMeshOffset.y, hipJointConfig.legMeshOffset.z]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[legThickness, legLength, legThickness]} />
+          <meshStandardMaterial 
+            color="#8B4513" 
+            roughness={0.7}
+            metalness={0.1}
+          />
+        </mesh>
+      </group>
+      
+      {/* CRITICAL FIX: Right hip joint with leg as child for proper pivot motion */}
+      <group 
+        ref={rightHipRef}
+        position={[hipJointConfig.rightHipPosition.x, hipJointConfig.rightHipPosition.y, hipJointConfig.rightHipPosition.z]}
+      >
+        <mesh 
+          ref={rightLegRef}
+          position={[hipJointConfig.legMeshOffset.x, hipJointConfig.legMeshOffset.y, hipJointConfig.legMeshOffset.z]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[legThickness, legLength, legThickness]} />
+          <meshStandardMaterial 
+            color="#8B4513" 
+            roughness={0.7}
+            metalness={0.1}
+          />
+        </mesh>
+      </group>
     </group>
   );
 }
