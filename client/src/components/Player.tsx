@@ -1,14 +1,15 @@
 import { useRef, useEffect, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useKeyboardControls, useGLTF } from "@react-three/drei";
+import { useKeyboardControls, useGLTF, useAnimations } from "@react-three/drei";
 import * as THREE from "three";
 import { Controls } from "../App";
 import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 
 export default function Player() {
-  const { scene } = useGLTF('/models/student_character.glb');
+  const { scene, animations } = useGLTF('/models/student_character.glb');
   const playerRef = useRef<THREE.Group>(null);
+  const { actions, mixer } = useAnimations(animations, playerRef);
   const [subscribe, get] = useKeyboardControls<Controls>();
   const { addScore } = useGameState();
   const { playHit } = useAudio();
@@ -18,12 +19,27 @@ export default function Player() {
   const speed = 5;
   const jumpForce = 8;
   
-  // Animation states
-  const [animationState, setAnimationState] = useState<'idle' | 'walking' | 'jumping'>('idle');
+  // Animation states for realistic walking like Free Fire/BGMI
+  const [animationState, setAnimationState] = useState<'idle' | 'walking' | 'running' | 'jumping'>('idle');
   const walkCycle = useRef(0);
   const jumpAnimation = useRef(0);
   const currentRotation = useRef(0);
   const targetRotation = useRef(0);
+  
+  // Realistic walking animation system
+  const leftLeg = useRef(new THREE.Object3D());
+  const rightLeg = useRef(new THREE.Object3D());
+  const leftArm = useRef(new THREE.Object3D());
+  const rightArm = useRef(new THREE.Object3D());
+  const torso = useRef(new THREE.Object3D());
+  const head = useRef(new THREE.Object3D());
+  
+  // Animation timing for realistic walking
+  const walkPhase = useRef(0);
+  const stepLength = useRef(0.8);
+  const armSwingAmount = useRef(0.3);
+  const headBobAmount = useRef(0.05);
+  const legLiftHeight = useRef(0.2);
 
   useEffect(() => {
     // Log when controls change
@@ -82,7 +98,7 @@ export default function Player() {
     currentRotation.current += shortestAngle * 8 * delta;
     player.rotation.y = currentRotation.current;
 
-    // Animation state management
+    // Animation state management like Free Fire/BGMI
     if (controls.jump && isOnGround.current) {
       setAnimationState('jumping');
       jumpAnimation.current = 0;
@@ -90,7 +106,13 @@ export default function Player() {
       isOnGround.current = false;
       playHit();
     } else if (isMoving && isOnGround.current) {
-      setAnimationState('walking');
+      // Different walking speeds like in battle royale games
+      const movementSpeed = moveVector.length();
+      if (movementSpeed > 0.8) {
+        setAnimationState('running');
+      } else {
+        setAnimationState('walking');
+      }
     } else if (isOnGround.current) {
       setAnimationState('idle');
     }
@@ -112,29 +134,69 @@ export default function Player() {
       isOnGround.current = true;
     }
 
-    // Walking animation (bobbing effect)
-    if (animationState === 'walking' && isMoving) {
-      walkCycle.current += delta * 8; // Walking speed
-      const bobHeight = Math.sin(walkCycle.current) * 0.1;
-      const tilt = Math.sin(walkCycle.current) * 0.05;
+    // Realistic walking animation system like Free Fire/BGMI
+    if ((animationState === 'walking' || animationState === 'running') && isMoving) {
+      // Walking speed affects animation speed
+      const walkSpeed = animationState === 'running' ? 12 : 8;
+      walkPhase.current += delta * walkSpeed;
+      
+      // Create realistic walking cycle with proper leg and arm movements
+      const leftLegPhase = Math.sin(walkPhase.current);
+      const rightLegPhase = Math.sin(walkPhase.current + Math.PI);
+      const leftArmPhase = Math.sin(walkPhase.current + Math.PI); // Arms opposite to legs
+      const rightArmPhase = Math.sin(walkPhase.current);
       
       if (playerRef.current?.children[0]) {
-        playerRef.current.children[0].position.y = bobHeight;
-        playerRef.current.children[0].rotation.z = tilt;
-        playerRef.current.children[0].rotation.x = Math.sin(walkCycle.current * 0.5) * 0.02;
+        const character = playerRef.current.children[0];
+        
+        // Natural head bobbing like in popular games
+        const headBob = Math.sin(walkPhase.current * 2) * headBobAmount.current;
+        character.position.y = headBob;
+        
+        // Subtle body lean during walking
+        const bodyLean = Math.sin(walkPhase.current) * 0.02;
+        character.rotation.z = bodyLean;
+        
+        // Forward lean while running like in action games
+        if (animationState === 'running') {
+          character.rotation.x = -0.1;
+        } else {
+          character.rotation.x = THREE.MathUtils.lerp(character.rotation.x, 0, delta * 5);
+        }
+        
+        // Traverse model to find and animate limbs
+        character.traverse((child) => {
+          if (child.name.toLowerCase().includes('leg') && child.name.toLowerCase().includes('left')) {
+            child.rotation.x = leftLegPhase * 0.5;
+            child.position.y = Math.max(0, leftLegPhase * legLiftHeight.current);
+          }
+          if (child.name.toLowerCase().includes('leg') && child.name.toLowerCase().includes('right')) {
+            child.rotation.x = rightLegPhase * 0.5;
+            child.position.y = Math.max(0, rightLegPhase * legLiftHeight.current);
+          }
+          if (child.name.toLowerCase().includes('arm') && child.name.toLowerCase().includes('left')) {
+            child.rotation.x = leftArmPhase * armSwingAmount.current;
+          }
+          if (child.name.toLowerCase().includes('arm') && child.name.toLowerCase().includes('right')) {
+            child.rotation.x = rightArmPhase * armSwingAmount.current;
+          }
+        });
       }
     } else {
-      // Reset walking animations when not walking
+      // Smoothly return to idle pose
       if (playerRef.current?.children[0]) {
-        playerRef.current.children[0].position.y = THREE.MathUtils.lerp(
-          playerRef.current.children[0].position.y, 0, delta * 5
-        );
-        playerRef.current.children[0].rotation.z = THREE.MathUtils.lerp(
-          playerRef.current.children[0].rotation.z, 0, delta * 5
-        );
-        playerRef.current.children[0].rotation.x = THREE.MathUtils.lerp(
-          playerRef.current.children[0].rotation.x, 0, delta * 5
-        );
+        const character = playerRef.current.children[0];
+        character.position.y = THREE.MathUtils.lerp(character.position.y, 0, delta * 5);
+        character.rotation.z = THREE.MathUtils.lerp(character.rotation.z, 0, delta * 5);
+        character.rotation.x = THREE.MathUtils.lerp(character.rotation.x, 0, delta * 5);
+        
+        // Reset limb positions smoothly
+        character.traverse((child) => {
+          if (child.name.toLowerCase().includes('leg') || child.name.toLowerCase().includes('arm')) {
+            child.rotation.x = THREE.MathUtils.lerp(child.rotation.x, 0, delta * 5);
+            child.position.y = THREE.MathUtils.lerp(child.position.y, 0, delta * 5);
+          }
+        });
       }
     }
 
