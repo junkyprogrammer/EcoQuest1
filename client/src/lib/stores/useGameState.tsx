@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { levels, getLevelByScore, type Level, type LevelObjective } from "../gameData";
+import { levels, getLevelByScore, getAvailableEcosystems, getEcosystemProgress, type Level, type LevelObjective, type EcosystemProgress } from "../gameData";
 
-export type GamePhase = "menu" | "playing" | "ended";
+export type GamePhase = "menu" | "ecosystem_selection" | "playing" | "ended";
 
 interface Inventory {
   [key: string]: number;
@@ -23,6 +23,12 @@ interface GameState {
   recyclingChallengesCompleted: number;
   quizzesCompleted: number;
   
+  // Ecosystem-specific state
+  currentEcosystem: 'forest' | 'ocean' | 'city';
+  ecosystemProgress: EcosystemProgress;
+  availableEcosystems: string[];
+  ecosystemTransitioning: boolean;
+  
   // Actions
   start: () => void;
   restart: () => void;
@@ -37,6 +43,12 @@ interface GameState {
   nextLevel: () => void;
   updateObjectiveProgress: (type: string, target: string | number, amount?: number) => void;
   checkLevelCompletion: () => void;
+  
+  // Ecosystem-specific actions
+  selectEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => void;
+  showEcosystemSelection: () => void;
+  completeEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => void;
+  unlockNextEcosystem: () => void;
 }
 
 export const useGameState = create<GameState>()(
@@ -49,7 +61,18 @@ export const useGameState = create<GameState>()(
     inventory: {
       "Recyclables": 0,
       "Clean Energy": 0,
-      "Plants": 0
+      "Plants": 0,
+      "Seeds": 0,
+      "Flowers": 0,
+      "Mushrooms": 0,
+      "Pearls": 0,
+      "Shells": 0,
+      "Seaweed": 0,
+      "Ocean Cleanup Points": 0,
+      "Renewable Energy Installed": 0,
+      "Pollution Reduced": 0,
+      "Green Spaces Created": 0,
+      "Cleaned Pollution": 0
     },
     showMiniGame: false,
     showQuiz: false,
@@ -58,12 +81,19 @@ export const useGameState = create<GameState>()(
     recyclingChallengesCompleted: 0,
     quizzesCompleted: 0,
     
+    // Ecosystem state initialization
+    currentEcosystem: 'forest',
+    ecosystemProgress: getEcosystemProgress(0),
+    availableEcosystems: ['forest'],
+    ecosystemTransitioning: false,
+    
     start: () => {
       set((state) => {
         if (state.gamePhase === "menu") {
           return { 
-            gamePhase: "playing",
-            levelStartTime: Date.now()
+            gamePhase: "ecosystem_selection",
+            levelStartTime: Date.now(),
+            availableEcosystems: getAvailableEcosystems(state.score)
           };
         }
         return {};
@@ -81,14 +111,29 @@ export const useGameState = create<GameState>()(
         inventory: {
           "Recyclables": 0,
           "Clean Energy": 0,
-          "Plants": 0
+          "Plants": 0,
+          "Seeds": 0,
+          "Flowers": 0,
+          "Mushrooms": 0,
+          "Pearls": 0,
+          "Shells": 0,
+          "Seaweed": 0,
+          "Ocean Cleanup Points": 0,
+          "Renewable Energy Installed": 0,
+          "Pollution Reduced": 0,
+          "Green Spaces Created": 0,
+          "Cleaned Pollution": 0
         },
         showMiniGame: false,
         showQuiz: false,
         completedChallenges: [],
         levelStartTime: Date.now(),
         recyclingChallengesCompleted: 0,
-        quizzesCompleted: 0
+        quizzesCompleted: 0,
+        currentEcosystem: 'forest',
+        ecosystemProgress: getEcosystemProgress(0),
+        availableEcosystems: ['forest'],
+        ecosystemTransitioning: false
       }));
     },
     
@@ -102,7 +147,11 @@ export const useGameState = create<GameState>()(
     },
 
     addScore: (points: number) => {
-      set((state) => ({ score: state.score + points }));
+      set((state) => ({
+        score: state.score + points,
+        ecosystemProgress: getEcosystemProgress(state.score + points),
+        availableEcosystems: getAvailableEcosystems(state.score + points)
+      }));
     },
 
     addToInventory: (item: string, quantity = 1) => {
@@ -195,6 +244,65 @@ export const useGameState = create<GameState>()(
             get().end();
           }, 2000);
         }
+      }
+    },
+    
+    // Ecosystem-specific actions
+    selectEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => {
+      set((state) => {
+        const ecosystemLevel = levels.find(level => level.ecosystem === ecosystem);
+        if (ecosystemLevel && state.availableEcosystems.includes(ecosystem)) {
+          return {
+            currentEcosystem: ecosystem,
+            currentLevelData: ecosystemLevel,
+            objectives: [...ecosystemLevel.objectives],
+            gamePhase: "playing" as GamePhase,
+            levelStartTime: Date.now(),
+            ecosystemTransitioning: true
+          };
+        }
+        return {};
+      });
+      
+      // Reset transition after delay
+      setTimeout(() => {
+        set({ ecosystemTransitioning: false });
+      }, 2000);
+    },
+    
+    showEcosystemSelection: () => {
+      set((state) => ({
+        gamePhase: "ecosystem_selection" as GamePhase,
+        availableEcosystems: getAvailableEcosystems(state.score)
+      }));
+    },
+    
+    completeEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => {
+      set((state) => {
+        const updatedProgress = { ...state.ecosystemProgress };
+        updatedProgress[ecosystem].completed = true;
+        
+        return {
+          ecosystemProgress: updatedProgress,
+          availableEcosystems: getAvailableEcosystems(state.score)
+        };
+      });
+      
+      get().unlockNextEcosystem();
+    },
+    
+    unlockNextEcosystem: () => {
+      const state = get();
+      const newAvailable = getAvailableEcosystems(state.score);
+      
+      set({ availableEcosystems: newAvailable });
+      
+      // Check if all ecosystems are completed
+      const allCompleted = Object.values(state.ecosystemProgress).every(eco => eco.completed);
+      if (allCompleted) {
+        setTimeout(() => {
+          get().end();
+        }, 3000);
       }
     }
   }))

@@ -1,8 +1,16 @@
 export const miniGames = [
   {
+    id: 'recycling_drag_drop',
+    type: 'drag_drop_recycling',
+    title: 'Advanced Recycling Sorting Challenge',
+    description: 'Drag waste items into the correct recycling bins!',
+    points: 200,
+    explanation: 'Learn proper recycling practices through interactive drag-and-drop gameplay.'
+  },
+  {
     id: 'recycling_sort',
     type: 'sorting',
-    title: 'Recycling Sorting Challenge',
+    title: 'Quick Recycling Sort',
     description: 'Help sort waste into the correct bins!',
     item: 'Plastic Bottle',
     options: ['Paper Bin', 'Plastic Bin', 'Organic Bin', 'General Waste'],
@@ -98,10 +106,11 @@ export const environmentalFacts = [
 ];
 
 export interface LevelObjective {
-  type: 'collect' | 'recycle' | 'quiz' | 'score';
+  type: 'collect' | 'recycle' | 'quiz' | 'score' | 'cleanup' | 'renewable' | 'greenspace';
   target: string | number;
   current?: number;
   description: string;
+  ecosystem?: string;
 }
 
 export interface Level {
@@ -113,124 +122,220 @@ export interface Level {
   maxTime?: number; // optional time limit in seconds
   rewardPoints: number;
   theme: string;
+  ecosystem?: 'forest' | 'ocean' | 'city';
+  backgroundColor?: string;
+  educationalFacts?: string[];
 }
 
+export interface EcosystemProgress {
+  forest: { completed: boolean; score: number; objectivesComplete: number };
+  ocean: { completed: boolean; score: number; objectivesComplete: number };
+  city: { completed: boolean; score: number; objectivesComplete: number };
+}
+
+// Ecosystem-based levels with educational objectives
 export const levels: Level[] = [
+  // Forest Ecosystem Levels
   {
     id: 1,
-    name: "Green Beginner",
-    description: "Learn the basics of environmental conservation!",
+    name: "Forest Guardian",
+    description: "Restore the enchanted forest by protecting wildlife and cleaning up pollution!",
+    ecosystem: 'forest',
+    backgroundColor: '#87CEEB',
     objectives: [
       {
         type: 'collect',
-        target: 'Plants',
+        target: 'Seeds',
         current: 0,
-        description: 'Collect 5 plant items'
+        description: 'Plant 10 native tree seeds',
+        ecosystem: 'forest'
+      },
+      {
+        type: 'cleanup',
+        target: 3,
+        current: 0,
+        description: 'Clean up 3 pollution sources',
+        ecosystem: 'forest'
+      },
+      {
+        type: 'collect',
+        target: 'Flowers',
+        current: 0,
+        description: 'Discover 15 plant species',
+        ecosystem: 'forest'
       },
       {
         type: 'score',
         target: 500,
         current: 0,
-        description: 'Reach 500 points'
+        description: 'Reach 500 conservation points'
       }
     ],
     unlockScore: 0,
-    rewardPoints: 100,
-    theme: 'beginner'
+    rewardPoints: 500,
+    theme: 'forest',
+    educationalFacts: [
+      "Forests absorb 2.6 billion tons of CO2 annually!",
+      "A single tree can produce enough oxygen for 2 people per day.",
+      "Forests are home to 80% of terrestrial biodiversity."
+    ]
   },
+  
+  // Ocean Ecosystem Levels
   {
     id: 2,
-    name: "Recycling Hero",
-    description: "Master the art of recycling and waste sorting!",
+    name: "Ocean Protector",
+    description: "Dive deep to save marine life and restore coral reefs!",
+    ecosystem: 'ocean',
+    backgroundColor: '#006994',
     objectives: [
       {
-        type: 'recycle',
-        target: 'Recyclables',
+        type: 'cleanup',
+        target: 20,
         current: 0,
-        description: 'Complete 3 recycling challenges'
+        description: 'Remove 20 pieces of ocean plastic',
+        ecosystem: 'ocean'
       },
       {
         type: 'collect',
-        target: 'Clean Energy',
+        target: 'Pearls',
         current: 0,
-        description: 'Collect 3 energy orbs'
+        description: 'Restore 5 coral reef sections',
+        ecosystem: 'ocean'
+      },
+      {
+        type: 'collect',
+        target: 'Shells',
+        current: 0,
+        description: 'Catalog 12 marine species',
+        ecosystem: 'ocean'
       },
       {
         type: 'score',
         target: 1000,
         current: 0,
-        description: 'Reach 1000 points'
+        description: 'Reach 1000 ocean conservation points'
       }
     ],
     unlockScore: 500,
-    rewardPoints: 200,
-    theme: 'recycling'
+    maxTime: 600, // 10 minutes
+    rewardPoints: 750,
+    theme: 'ocean',
+    educationalFacts: [
+      "Oceans produce 50% of the oxygen we breathe!",
+      "Plastic takes 450-500 years to decompose in ocean water.",
+      "Coral reefs support 25% of all marine life species."
+    ]
   },
+  
+  // City Ecosystem Levels
   {
     id: 3,
-    name: "Climate Champion",
-    description: "Tackle climate change and renewable energy challenges!",
+    name: "Green City Planner",
+    description: "Transform the urban landscape with renewable energy and green spaces!",
+    ecosystem: 'city',
+    backgroundColor: '#2F4F4F',
     objectives: [
       {
-        type: 'quiz',
-        target: 'climate',
+        type: 'renewable',
+        target: 15,
         current: 0,
-        description: 'Complete 2 climate quizzes'
+        description: 'Install 15 renewable energy sources',
+        ecosystem: 'city'
       },
       {
-        type: 'collect',
-        target: 'Clean Energy',
+        type: 'cleanup',
+        target: 10,
         current: 0,
-        description: 'Collect 5 energy orbs'
+        description: 'Reduce air pollution by 50%',
+        ecosystem: 'city'
+      },
+      {
+        type: 'greenspace',
+        target: 5,
+        current: 0,
+        description: 'Create 5 urban green spaces',
+        ecosystem: 'city'
       },
       {
         type: 'score',
         target: 1800,
         current: 0,
-        description: 'Reach 1800 points'
+        description: 'Reach 1800 urban planning points'
       }
     ],
-    unlockScore: 1000,
-    maxTime: 300, // 5 minutes
-    rewardPoints: 300,
-    theme: 'climate'
+    unlockScore: 1250,
+    maxTime: 900, // 15 minutes
+    rewardPoints: 1000,
+    theme: 'city',
+    educationalFacts: [
+      "Cities consume 78% of global energy and emit 70% of CO2!",
+      "Urban trees can reduce city temperatures by 2-9°F.",
+      "Green roofs can reduce building energy use by 30%."
+    ]
   },
+  
+  // Master Challenge
   {
     id: 4,
-    name: "Eco Master",
-    description: "Prove yourself as the ultimate environmental guardian!",
+    name: "Eco Master - Earth's Guardian",
+    description: "Master all ecosystems and become Earth's ultimate environmental hero!",
     objectives: [
       {
         type: 'collect',
-        target: 'Plants',
+        target: 'All Ecosystems',
         current: 0,
-        description: 'Collect 10 plant items'
-      },
-      {
-        type: 'recycle',
-        target: 'Recyclables',
-        current: 0,
-        description: 'Complete 5 recycling challenges'
+        description: 'Complete all ecosystem challenges'
       },
       {
         type: 'quiz',
         target: 'all',
         current: 0,
-        description: 'Complete 3 environmental quizzes'
+        description: 'Pass 5 comprehensive eco-quizzes'
       },
       {
         type: 'score',
-        target: 3000,
+        target: 4000,
         current: 0,
-        description: 'Reach 3000 points'
+        description: 'Reach 4000 total conservation points'
       }
     ],
-    unlockScore: 1800,
-    maxTime: 420, // 7 minutes
-    rewardPoints: 500,
-    theme: 'master'
+    unlockScore: 3250,
+    maxTime: 1200, // 20 minutes
+    rewardPoints: 1500,
+    theme: 'master',
+    educationalFacts: [
+      "You are now an Environmental Hero! 🌍",
+      "Small actions create big environmental changes.",
+      "Conservation is everyone's responsibility."
+    ]
   }
 ];
+
+// Ecosystem-specific educational content
+export const ecosystemFacts = {
+  forest: [
+    "Forests cover 31% of the global land area.",
+    "Trees communicate with each other through underground fungal networks.",
+    "The Amazon rainforest produces 20% of the world's oxygen.",
+    "Deforestation accounts for 11% of global CO2 emissions.",
+    "One mature tree can absorb 48 pounds of CO2 per year."
+  ],
+  ocean: [
+    "Oceans absorb about 25% of all CO2 emissions.",
+    "The Great Pacific Garbage Patch is twice the size of Texas.",
+    "Ocean temperatures have risen 0.33°C since 1969.",
+    "Sea levels are rising 3.3mm per year due to climate change.",
+    "Over 1 million marine animals die from plastic pollution annually."
+  ],
+  city: [
+    "Cities house 50% of the world's population but use 80% of energy.",
+    "Urban heat islands can be 1-7°F warmer than surrounding areas.",
+    "Green buildings can reduce water usage by 20-30%.",
+    "Electric vehicles produce 60% fewer emissions than gas cars.",
+    "Vertical farms use 95% less water than traditional farming."
+  ]
+};
 
 export const getLevelByScore = (score: number): Level => {
   // Find the highest level that can be unlocked with the current score
@@ -241,4 +346,24 @@ export const getLevelByScore = (score: number): Level => {
 export const getNextLevel = (currentLevelId: number): Level | null => {
   const nextLevel = levels.find(level => level.id === currentLevelId + 1);
   return nextLevel || null;
+};
+
+export const getLevelsByEcosystem = (ecosystem: 'forest' | 'ocean' | 'city'): Level[] => {
+  return levels.filter(level => level.ecosystem === ecosystem);
+};
+
+export const getAvailableEcosystems = (score: number): string[] => {
+  const availableEcosystems: string[] = [];
+  if (score >= 0) availableEcosystems.push('forest');
+  if (score >= 500) availableEcosystems.push('ocean');
+  if (score >= 1250) availableEcosystems.push('city');
+  return availableEcosystems;
+};
+
+export const getEcosystemProgress = (score: number): EcosystemProgress => {
+  return {
+    forest: { completed: score >= 500, score: Math.min(score, 500), objectivesComplete: 0 },
+    ocean: { completed: score >= 1250, score: Math.max(0, Math.min(score - 500, 750)), objectivesComplete: 0 },
+    city: { completed: score >= 2250, score: Math.max(0, Math.min(score - 1250, 1000)), objectivesComplete: 0 }
+  };
 };

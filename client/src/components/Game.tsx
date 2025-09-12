@@ -2,7 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { useRef, useEffect } from "react";
 import * as THREE from "three";
 import Player from "./Player";
-import Environment from "./Environment";
+import EcosystemManager from "./EcosystemManager";
 import Lights from "./Lights";
 import Terrain from "./Terrain";
 import EnvironmentalObjects from "./EnvironmentalObjects";
@@ -11,7 +11,7 @@ import { useGameState } from "../lib/stores/useGameState";
 
 export default function Game() {
   const groupRef = useRef<THREE.Group>(null);
-  const { gamePhase, currentLevel } = useGameState();
+  const { gamePhase, currentLevel, currentEcosystem, ecosystemTransitioning } = useGameState();
 
   useFrame((state, delta) => {
     // Game loop logic here
@@ -27,9 +27,11 @@ export default function Game() {
   return (
     <group ref={groupRef}>
       <Lights />
-      <Terrain />
+      <EcosystemManager 
+        currentEcosystem={currentEcosystem}
+        transitionDuration={2.0}
+      />
       <Player />
-      <Environment />
       <EnvironmentalObjects />
       <CollectibleItems />
     </group>

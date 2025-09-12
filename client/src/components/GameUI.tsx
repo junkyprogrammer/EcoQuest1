@@ -2,6 +2,7 @@ import { useGameState } from "../lib/stores/useGameState";
 import { useAudio } from "../lib/stores/useAudio";
 import MiniGames from "./MiniGames";
 import Quiz from "./Quiz";
+import EcosystemSelection from "./EcosystemSelection";
 import { useState, useEffect } from "react";
 
 export default function GameUI() {
@@ -14,8 +15,12 @@ export default function GameUI() {
     inventory, 
     showMiniGame, 
     showQuiz,
+    currentEcosystem,
+    availableEcosystems,
+    ecosystemProgress,
     start,
-    restart 
+    restart,
+    showEcosystemSelection
   } = useGameState();
   const { isMuted, toggleMute } = useAudio();
   const [showTutorial, setShowTutorial] = useState(false);
@@ -103,6 +108,10 @@ export default function GameUI() {
         </div>
       </div>
     );
+  }
+
+  if (gamePhase === 'ecosystem_selection') {
+    return <EcosystemSelection />;
   }
 
   if (gamePhase === 'ended') {
