@@ -3,6 +3,8 @@ import { useRef, useEffect } from "react";
 import * as THREE from "three";
 import Player from "./Player";
 import EcosystemManager from "./EcosystemManager";
+import PlaygroundEnvironment from "./PlaygroundEnvironment";
+import NPCs from "./NPCs";
 import Lights from "./Lights";
 import Terrain from "./Terrain";
 import EnvironmentalObjects from "./EnvironmentalObjects";
@@ -30,13 +32,23 @@ export default function Game() {
   return (
     <group ref={groupRef}>
       <Lights />
-      <EcosystemManager 
-        currentEcosystem={currentEcosystem}
-        transitionDuration={2.0}
-      />
+      {/* Playground Garden Environment */}
+      <Terrain />
+      <PlaygroundEnvironment />
+      <NPCs />
       <Player />
-      <EnvironmentalObjects />
-      <CollectibleItems />
+      
+      {/* Keep ecosystem manager for other features but not active by default */}
+      {false && (
+        <>
+          <EcosystemManager 
+            currentEcosystem={currentEcosystem}
+            transitionDuration={2.0}
+          />
+          <EnvironmentalObjects />
+          <CollectibleItems />
+        </>
+      )}
     </group>
   );
 }
