@@ -94,6 +94,214 @@ export const quizQuestions = [
     correctAnswer: '450-500 years',
     points: 160,
     explanation: 'Plastic bottles can take 450-500 years to decompose, which is why recycling and reducing plastic use is so important.'
+  },
+  {
+    id: 'carbon_footprint',
+    question: 'What is a carbon footprint?',
+    options: [
+      'The size of your foot',
+      'Total greenhouse gases produced by human activities',
+      'Amount of coal you burn',
+      'How much you walk per day'
+    ],
+    correctAnswer: 'Total greenhouse gases produced by human activities',
+    points: 170,
+    explanation: 'A carbon footprint measures the total greenhouse gas emissions caused directly and indirectly by a person, organization, event, or product.'
+  },
+  {
+    id: 'ozone_layer',
+    question: 'What protects Earth from harmful ultraviolet radiation?',
+    options: [
+      'Clouds',
+      'The ozone layer',
+      'Ocean water',
+      'Mountain ranges'
+    ],
+    correctAnswer: 'The ozone layer',
+    points: 160,
+    explanation: 'The ozone layer in the stratosphere protects life on Earth by absorbing most of the Sun\'s harmful ultraviolet radiation.'
+  },
+  {
+    id: 'water_conservation',
+    question: 'Which activity uses the most water in a typical household?',
+    options: [
+      'Brushing teeth',
+      'Taking showers',
+      'Washing dishes',
+      'Drinking water'
+    ],
+    correctAnswer: 'Taking showers',
+    points: 140,
+    explanation: 'Showers typically account for about 17% of indoor water use, making them one of the largest water consumption activities in homes.'
+  },
+  {
+    id: 'deforestation',
+    question: 'What is the main cause of deforestation globally?',
+    options: [
+      'Natural disasters',
+      'Agriculture and livestock farming',
+      'Urban development',
+      'Paper production'
+    ],
+    correctAnswer: 'Agriculture and livestock farming',
+    points: 180,
+    explanation: 'Agriculture and livestock farming account for about 80% of global deforestation as forests are cleared for crops and grazing land.'
+  },
+  {
+    id: 'acid_rain',
+    question: 'What causes acid rain?',
+    options: [
+      'Too much oxygen in the air',
+      'Sulfur dioxide and nitrogen oxides pollution',
+      'Ocean evaporation',
+      'Volcanic ash'
+    ],
+    correctAnswer: 'Sulfur dioxide and nitrogen oxides pollution',
+    points: 190,
+    explanation: 'Acid rain forms when sulfur dioxide and nitrogen oxides from pollution react with water, oxygen and other chemicals in the air to form acidic compounds.'
+  },
+  {
+    id: 'endangered_species',
+    question: 'How many species are estimated to become extinct each day?',
+    options: [
+      '1-10 species',
+      '50-100 species',
+      '150-200 species',
+      '500+ species'
+    ],
+    correctAnswer: '150-200 species',
+    points: 200,
+    explanation: 'Scientists estimate that 150-200 species become extinct every day, primarily due to habitat loss, pollution, and climate change.'
+  },
+  {
+    id: 'recycling_benefits',
+    question: 'Recycling one ton of paper saves approximately how many trees?',
+    options: [
+      '5 trees',
+      '10 trees',
+      '17 trees',
+      '25 trees'
+    ],
+    correctAnswer: '17 trees',
+    points: 150,
+    explanation: 'Recycling one ton of paper saves about 17 trees, along with significant amounts of water and energy in the manufacturing process.'
+  },
+  {
+    id: 'ocean_plastic',
+    question: 'What percentage of plastic waste ends up in the oceans?',
+    options: [
+      '2-5%',
+      '8-10%',
+      '15-20%',
+      '30-40%'
+    ],
+    correctAnswer: '8-10%',
+    points: 170,
+    explanation: 'Approximately 8-10% of plastic waste ends up in oceans, creating massive pollution problems and harming marine life.'
+  },
+  {
+    id: 'renewable_capacity',
+    question: 'Which country leads the world in renewable energy capacity?',
+    options: [
+      'United States',
+      'Germany',
+      'China',
+      'India'
+    ],
+    correctAnswer: 'China',
+    points: 160,
+    explanation: 'China leads globally in renewable energy capacity, particularly in solar and wind power installations and manufacturing.'
+  },
+  {
+    id: 'food_waste',
+    question: 'What percentage of food produced globally is wasted?',
+    options: [
+      '10%',
+      '20%',
+      '30%',
+      '40%'
+    ],
+    correctAnswer: '30%',
+    points: 180,
+    explanation: 'About one-third (30%) of all food produced globally is wasted, contributing significantly to greenhouse gas emissions and resource depletion.'
+  },
+  {
+    id: 'sustainable_development',
+    question: 'What does sustainable development mean?',
+    options: [
+      'Fast economic growth',
+      'Meeting present needs without compromising future generations',
+      'Using only renewable resources',
+      'Building more cities'
+    ],
+    correctAnswer: 'Meeting present needs without compromising future generations',
+    points: 190,
+    explanation: 'Sustainable development meets the needs of the present without compromising the ability of future generations to meet their own needs.'
+  },
+  {
+    id: 'composting',
+    question: 'What percentage of household waste can be composted?',
+    options: [
+      '10-15%',
+      '20-25%',
+      '30-35%',
+      '40-50%'
+    ],
+    correctAnswer: '30-35%',
+    points: 140,
+    explanation: 'About 30-35% of household waste consists of organic materials that can be composted, reducing landfill waste and creating valuable soil amendment.'
+  },
+  {
+    id: 'energy_efficiency',
+    question: 'Which home appliance typically uses the most electricity?',
+    options: [
+      'Refrigerator',
+      'Air conditioning/heating',
+      'Television',
+      'Washing machine'
+    ],
+    correctAnswer: 'Air conditioning/heating',
+    points: 150,
+    explanation: 'Heating and cooling systems typically account for 40-50% of a home\'s energy usage, making them the largest energy consumers.'
+  },
+  {
+    id: 'coral_reefs',
+    question: 'What percentage of coral reefs have been damaged by climate change?',
+    options: [
+      '25%',
+      '40%',
+      '60%',
+      '75%'
+    ],
+    correctAnswer: '75%',
+    points: 200,
+    explanation: 'Climate change has damaged about 75% of the world\'s coral reefs through ocean warming, acidification, and bleaching events.'
+  },
+  {
+    id: 'carbon_dioxide_levels',
+    question: 'What is considered a dangerous level of atmospheric CO2?',
+    options: [
+      '350 ppm',
+      '400 ppm',
+      '450 ppm',
+      '500 ppm'
+    ],
+    correctAnswer: '450 ppm',
+    points: 190,
+    explanation: 'Scientists consider 450 ppm of atmospheric CO2 as a dangerous level that could trigger irreversible climate change impacts.'
+  },
+  {
+    id: 'electric_vehicles',
+    question: 'Electric vehicles produce what percentage fewer emissions than gasoline cars?',
+    options: [
+      '30-40%',
+      '50-60%',
+      '70-80%',
+      '90-100%'
+    ],
+    correctAnswer: '70-80%',
+    points: 170,
+    explanation: 'Electric vehicles produce 70-80% fewer emissions than gasoline cars over their lifetime, even accounting for electricity generation and battery production.'
   }
 ];
 
