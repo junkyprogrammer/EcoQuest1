@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { levels, getLevelByScore, getAvailableEcosystems, getEcosystemProgress, type Level, type LevelObjective, type EcosystemProgress } from "../gameData";
 
-export type GamePhase = "age_selection" | "menu" | "ecosystem_selection" | "playing" | "ended";
+export type GamePhase = "name_input" | "age_selection" | "menu" | "ecosystem_selection" | "playing" | "ended";
 
 interface SavedGameState {
   score: number;
@@ -40,6 +40,9 @@ interface GameState {
   recyclingChallengesCompleted: number;
   quizzesCompleted: number;
   
+  // Player name state
+  playerName: string;
+  
   // Age selection state
   selectedAge: string | null;
   
@@ -75,6 +78,9 @@ interface GameState {
   updateObjectiveProgress: (type: string, target: string | number, amount?: number) => void;
   checkLevelCompletion: () => void;
   
+  // Player name actions
+  setPlayerName: (name: string) => void;
+  
   // Age selection actions
   selectAge: (ageGroup: string) => void;
   
@@ -87,7 +93,7 @@ interface GameState {
 
 export const useGameState = create<GameState>()(
   subscribeWithSelector((set, get) => ({
-    gamePhase: "age_selection",
+    gamePhase: "name_input",
     score: 0,
     currentLevel: 1,
     currentLevelData: levels[0],
@@ -118,6 +124,9 @@ export const useGameState = create<GameState>()(
     totalPausedTime: 0,
     recyclingChallengesCompleted: 0,
     quizzesCompleted: 0,
+    
+    // Player name state initialization
+    playerName: "",
     
     // Age selection state initialization
     selectedAge: null,
@@ -417,6 +426,19 @@ export const useGameState = create<GameState>()(
           }, 2000);
         }
       }
+    },
+    
+    // Player name actions
+    setPlayerName: (name: string) => {
+      set((state) => {
+        if (state.gamePhase === "name_input") {
+          return {
+            playerName: name.trim(),
+            gamePhase: "age_selection" as GamePhase
+          };
+        }
+        return {};
+      });
     },
     
     // Age selection actions
