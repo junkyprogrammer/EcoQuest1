@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useKeyboardControls, useGLTF, Text } from "@react-three/drei";
+import { useKeyboardControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { Controls } from "../App";
 import { useGameState } from "../lib/stores/useGameState";
@@ -35,7 +35,7 @@ export default function Player() {
   const leftLegRef = useRef<THREE.Mesh>(null);
   const rightLegRef = useRef<THREE.Mesh>(null);
   const [subscribe, get] = useKeyboardControls<Controls>();
-  const { isPaused, playerName } = useGameState();
+  const { isPaused } = useGameState();
   const { playHit } = useAudio();
   
   // Enhanced movement state - optimized for performance
@@ -507,22 +507,6 @@ export default function Player() {
         castShadow 
         receiveShadow
       />
-      
-      {/* Player Name Display Above Character */}
-      {playerName && (
-        <Text
-          position={[0, characterHeight * 1.2, 0]}
-          fontSize={0.8}
-          color="#4CAF50"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.1}
-          outlineColor="#000000"
-          font="/fonts/Inter-Bold.woff"
-        >
-          {playerName}
-        </Text>
-      )}
       
     </group>
   );
