@@ -49,7 +49,7 @@ export default function AgeSelection() {
   const buttonStyle = {
     pointerEvents: 'auto' as const,
     padding: '20px 30px',
-    border: 'none',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '16px',
     fontSize: '16px',
     fontWeight: '600',
@@ -61,8 +61,7 @@ export default function AgeSelection() {
     minWidth: '300px',
     textAlign: 'left' as const,
     color: 'white',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)'
+    backdropFilter: 'blur(10px)'
   };
 
   return (
