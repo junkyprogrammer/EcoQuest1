@@ -5,6 +5,7 @@ import { Controls } from "../App";
 import MiniGames from "./MiniGames";
 import Quiz from "./Quiz";
 import EcosystemSelection from "./EcosystemSelection";
+import AgeSelection from "./AgeSelection";
 import PauseMenu from "./PauseMenu";
 import { useState, useEffect } from "react";
 
@@ -83,6 +84,10 @@ export default function GameUI() {
     transition: 'all 0.3s ease',
     transform: 'translateY(0)'
   };
+
+  if (gamePhase === 'age_selection') {
+    return <AgeSelection />;
+  }
 
   if (gamePhase === 'menu') {
     return (
