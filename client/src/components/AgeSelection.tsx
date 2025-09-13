@@ -26,14 +26,6 @@ export default function AgeSelection() {
       description: 'Interactive adventures with educational games and quizzes',
       color: 'linear-gradient(135deg, #4ECDC4, #44A08D)',
       icon: '🌈',
-      difficulty: 'Easy'
-    },
-    {
-      id: 'teens',
-      label: '👦 Teens (13-17 years)',
-      description: 'Advanced environmental challenges and scientific concepts',
-      color: 'linear-gradient(135deg, #667eea, #764ba2)',
-      icon: '🎯',
       difficulty: 'Advanced'
     }
   ];
