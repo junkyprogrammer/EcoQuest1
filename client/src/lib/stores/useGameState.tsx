@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { levels, getLevelByScore, getAvailableEcosystems, getEcosystemProgress, type Level, type LevelObjective, type EcosystemProgress } from "../gameData";
 
-export type GamePhase = "menu" | "ecosystem_selection" | "playing" | "ended";
+export type GamePhase = "age_selection" | "menu" | "ecosystem_selection" | "playing" | "ended";
 
 interface SavedGameState {
   score: number;
@@ -40,6 +40,9 @@ interface GameState {
   recyclingChallengesCompleted: number;
   quizzesCompleted: number;
   
+  // Age selection state
+  selectedAge: string | null;
+  
   // Ecosystem-specific state
   currentEcosystem: 'forest' | 'ocean' | 'city';
   ecosystemProgress: EcosystemProgress;
@@ -72,6 +75,9 @@ interface GameState {
   updateObjectiveProgress: (type: string, target: string | number, amount?: number) => void;
   checkLevelCompletion: () => void;
   
+  // Age selection actions
+  selectAge: (ageGroup: string) => void;
+  
   // Ecosystem-specific actions
   selectEcosystem: (ecosystem: 'forest' | 'ocean' | 'city') => void;
   showEcosystemSelection: () => void;
@@ -81,7 +87,7 @@ interface GameState {
 
 export const useGameState = create<GameState>()(
   subscribeWithSelector((set, get) => ({
-    gamePhase: "menu",
+    gamePhase: "age_selection",
     score: 0,
     currentLevel: 1,
     currentLevelData: levels[0],
@@ -112,6 +118,9 @@ export const useGameState = create<GameState>()(
     totalPausedTime: 0,
     recyclingChallengesCompleted: 0,
     quizzesCompleted: 0,
+    
+    // Age selection state initialization
+    selectedAge: null,
     
     // Ecosystem state initialization
     currentEcosystem: 'forest',
@@ -408,6 +417,19 @@ export const useGameState = create<GameState>()(
           }, 2000);
         }
       }
+    },
+    
+    // Age selection actions
+    selectAge: (ageGroup: string) => {
+      set((state) => {
+        if (state.gamePhase === "age_selection") {
+          return {
+            selectedAge: ageGroup,
+            gamePhase: "menu" as GamePhase
+          };
+        }
+        return {};
+      });
     },
     
     // Ecosystem-specific actions
