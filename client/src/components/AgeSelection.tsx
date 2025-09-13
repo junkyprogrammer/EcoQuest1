@@ -34,14 +34,6 @@ export default function AgeSelection() {
       description: 'Advanced environmental challenges and scientific concepts',
       color: 'linear-gradient(135deg, #667eea, #764ba2)',
       icon: '🎯',
-      difficulty: 'Medium'
-    },
-    {
-      id: 'adults',
-      label: '👨 Adults (18+ years)',
-      description: 'Comprehensive environmental education with real-world applications',
-      color: 'linear-gradient(135deg, #f093fb, #f5576c)',
-      icon: '🎓',
       difficulty: 'Advanced'
     }
   ];
